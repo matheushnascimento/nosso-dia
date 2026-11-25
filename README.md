@@ -36,6 +36,16 @@ Para não precisar confirmar e-mail em desenvolvimento, desligue *Confirm email*
 | `npm run db:start` / `db:reset` | Supabase local / reaplica todas as migrations |
 | `npm run db:types` | Regenera os tipos do banco |
 
+## Deploy e página "em construção"
+
+Sem `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (ou com `EM_CONSTRUCAO=1`), o `proxy.ts`
+serve `public/em-construcao.html` em **todas** as rotas, com `noindex`. O build não precisa de nenhuma variável.
+
+Para lançar o app num projeto da Vercel que está mostrando o placeholder:
+1. Configure as variáveis do `.env.example` no projeto (Production).
+2. Remova `EM_CONSTRUCAO`, se existir.
+3. Faça um novo deploy. As `NEXT_PUBLIC_*` são embutidas no build, então só salvar as variáveis não basta.
+
 ## Estrutura
 
 ```text

@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
-import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/env";
+import { emConstrucao, supabaseEnv } from "@/lib/env";
 
 /** Rotas que exigem login. */
 const PROTEGIDAS = ["/painel", "/tarefas", "/configuracoes", "/onboarding", "/nova-senha"];
@@ -17,9 +17,21 @@ function casa(path: string, prefixos: string[]) {
  * A autorização de verdade fica no banco (RLS) e na DAL (src/lib/dal.ts).
  */
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  // Modo "em construção": toda página mostra o placeholder estático (public/em-construcao.html).
+  if (emConstrucao()) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/em-construcao.html";
+    url.search = "";
+    const r = NextResponse.rewrite(url);
+    r.headers.set("X-Robots-Tag", "noindex");
+    r.headers.set("Cache-Control", "no-store");
+    return r;
+  }
 
-  const supabase = createServerClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  let response = NextResponse.next({ request });
+  const { url: supabaseUrl, chave } = supabaseEnv();
+
+  const supabase = createServerClient<Database>(supabaseUrl, chave, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -65,5 +77,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|em-construcao.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nosso Dia · Em breve</title>
+<meta name="description" content="O planejamento do casamento de vocês, num só lugar. Em breve.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#faf7f2">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232b2622'/%3E%3Ccircle cx='26' cy='34' r='12' fill='none' stroke='%23faf7f2' stroke-width='4'/%3E%3Ccircle cx='38' cy='34' r='12' fill='none' stroke='%23b4756a' stroke-width='4'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --papel: #faf7f2; --tinta: #2b2622; --tinta-suave: #6f655d;
+    --linha: #e7dfd5; --rose: #b4756a;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--papel);
+    color: var(--tinta);
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+  }
+  .serif { font-family: "Cormorant Garamond", ui-serif, Georgia, serif; font-weight: 500; }
+  header, footer { width: 100%; max-width: 64rem; margin: 0 auto; }
+  .logo { font-size: 1.5rem; letter-spacing: -0.01em; }
+  .logo em, h1 em { color: var(--rose); }
+  main {
+    flex: 1;
+    width: 100%;
+    max-width: 40rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 48px 0;
+  }
+  .aneis { width: 72px; height: 48px; margin-bottom: 28px; }
+  .aneis circle { fill: none; stroke-width: 2.5; }
+  .selo {
+    font-size: 0.75rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--rose);
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: clamp(2.6rem, 9vw, 4.25rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+  }
+  p.texto {
+    margin-top: 20px;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    color: var(--tinta-suave);
+    max-width: 32rem;
+  }
+  .divisor {
+    width: 48px; height: 1px; background: var(--linha);
+    margin: 36px auto 0;
+  }
+  footer { font-size: 0.75rem; color: var(--tinta-suave); text-align: center; }
+  @media (prefers-reduced-motion: no-preference) {
+    .aneis .a2 { animation: aproxima 3.2s ease-in-out infinite alternate; }
+    @keyframes aproxima { from { transform: translateX(6px); } to { transform: translateX(0); } }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <span class="logo serif">Nosso <em>Dia</em></span>
+  </header>
+
+  <main>
+    <svg class="aneis" viewBox="0 0 72 48" aria-hidden="true">
+      <circle cx="28" cy="24" r="16" stroke="#2b2622"/>
+      <circle class="a2" cx="44" cy="24" r="16" stroke="#b4756a"/>
+    </svg>
+    <p class="selo">Em construção</p>
+    <h1 class="serif">Do “sim” ao grande dia, <em>sem planilha</em>.</h1>
+    <p class="texto">
+      Estamos preparando um jeito leve de planejar o casamento a dois:
+      um checklist que se ajusta sozinho à data de vocês, para dividir as tarefas
+      e não esquecer nada. Volte em breve.
+    </p>
+    <div class="divisor" role="presentation"></div>
+  </main>
+
+  <footer>Nosso Dia · 2026</footer>
+</body>
+</html>
