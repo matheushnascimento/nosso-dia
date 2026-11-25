@@ -11,10 +11,14 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a
 set role authenticated;
 select criar_evento('Ana & Bruno', 'definida', current_date + 120);
 update tarefas set status = 'concluida' where titulo = 'Reconfirmar todos os fornecedores';
+-- já tinha encomendado as alianças (deve continuar concluída quando o pacote de alianças absorver)
+update tarefas set status = 'concluida' where titulo = 'Encomendar as alianças';
 reset role;
 
 -- Carla: outro casamento
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000c', false);
 set role authenticated;
 select criar_evento('Carla & Davi', 'indefinida');
+-- renomeou a lua de mel antes do M1 (o título não pode ser sobrescrito)
+update tarefas set titulo = 'Lua de mel em Portugal' where titulo = 'Planejar e reservar a lua de mel';
 reset role;

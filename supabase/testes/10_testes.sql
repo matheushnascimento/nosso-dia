@@ -18,10 +18,14 @@ end $$;
 grant execute on function pg_temp.espera_erro(text,text) to authenticated, anon;
 
 -- ===== Ana cria o casamento para daqui 120 dias
+-- Quantas tarefas um casamento novo recebe: modelos ativos dos pacotes automáticos
+-- (24 no M0; cresce com as migrations de conteúdo do M1).
+select count(*) as n_tarefas from tarefa_modelos m join pacotes p on p.codigo = m.pacote
+ where m.ativo and p.automatico and p.ativo \gset
 select pg_temp.como('00000000-0000-0000-0000-00000000000a','ana@x.com');
 set role authenticated;
 select criar_evento('  Ana & Bruno ', 'definida', current_date + 120, '16:00', '18:00', 'Holambra', 'sp', 120, 4500000) as evento \gset
-select 'onboarding copia 24 tarefas' as teste, count(*) = 24 as ok from tarefas;
+select 'onboarding copia as tarefas dos pacotes automáticos' as teste, count(*) = :n_tarefas as ok from tarefas;
 select 'evento a 120 dias: nenhuma atrasada' as teste, count(*) filter (where grupo='atrasadas') = 0 as ok,
        count(*) filter (where grupo='comecar_agora') as comecar_agora, count(*) filter (where grupo<>'comecar_agora') as demais
   from tarefas_com_prazo;
@@ -31,7 +35,7 @@ select 'não altera criado_por (grant por coluna)' as teste, pg_temp.espera_erro
 select 'não insere tarefa com modelo_id (só RPC)' as teste,
   pg_temp.espera_erro(format($$insert into tarefas (evento_id, titulo, modelo_id) values (%L,'x',(select id from tarefa_modelos limit 1))$$, :'evento'), 'row-level security') as ok;
 insert into tarefas (evento_id, titulo, categoria, offset_dias) values (:'evento', 'Escolher o bolo', 'buffet', -45);
-select 'tarefa personalizada criada' as teste, count(*) = 25 as ok from tarefas;
+select 'tarefa personalizada criada' as teste, count(*) = :n_tarefas + 1 as ok from tarefas;
 select 'responsável precisa ser membro' as teste,
   pg_temp.espera_erro($$update tarefas set responsavel = '00000000-0000-0000-0000-00000000000c' where titulo='Escolher o bolo'$$, 'membro') as ok;
 
@@ -63,8 +67,8 @@ reset role;
 select pg_temp.como('00000000-0000-0000-0000-00000000000b','bruno@x.com');
 set role authenticated;
 select 'Bruno aceita convite' as teste, aceitar_convite(:'token_bruno') = :'evento' as ok;
-select 'Bruno vê as mesmas 25 tarefas e o nome da Ana' as teste,
-  (select count(*) from tarefas_com_prazo) = 25 and (select count(*) from perfis) = 2 as ok;
+select 'Bruno vê as mesmas tarefas e o nome da Ana' as teste,
+  (select count(*) from tarefas_com_prazo) = :n_tarefas + 1 and (select count(*) from perfis) = 2 as ok;
 select 'token não reutiliza' as teste, pg_temp.espera_erro(format($$select aceitar_convite(%L)$$, :'token_bruno'), 'inválido') as ok;
 update tarefas set status = 'concluida' where titulo = 'Contratar o espaço';
 select 'conclusão registra quem concluiu' as teste, concluida_por = '00000000-0000-0000-0000-00000000000b' and concluida_em is not null and grupo = 'concluidas' as ok
