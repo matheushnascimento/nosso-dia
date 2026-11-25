@@ -11,6 +11,7 @@
 | `20261126000001_m1_pacotes.sql` | M1 #1: pacotes de checklist, subitens, guias, `ativar_pacote`/`desativar_pacote`, backfill |
 | `20261126000002_m1_cerimonia.sql` | M1 #3: grupo de escolha `cerimonia` (católica, evangélica, outra, celebrante, só civil) e `pacotes.conclui` |
 | `20261126000003_m1_aliancas_lua_de_mel_kit.sql` | M1 #4, #7, #8: pacotes automáticos `aliancas`, `lua_de_mel`, `dia_d`; marca edições anteriores ao M1 |
+| `20261126000004_m1_trajes_beleza.sql` | M1 #5, #6: modelos **por parceiro** (`trajes_noivos`), `beleza`; `aceitar_convite` divide as tarefas por parceiro |
 
 ## Pacotes de checklist (M1)
 
@@ -22,6 +23,9 @@
   sem duplicar: se estava intacta, recebe o conteúdo novo; se foi concluída ou editada, só troca de modelo.
 - **`pacotes.conclui`**: códigos de modelos concluídos automaticamente quando o pacote é ativado
   (ex.: escolher a cerimônia conclui "Decidir o tipo de cerimônia").
+- **`tarefa_modelos.por_parceiro`**: cada parceiro tem a própria tarefa (`tarefas.parceiro`). Com um parceiro
+  só no app, fica uma tarefa compartilhada; quando o segundo aceita o convite, a compartilhada passa a ser de
+  quem já estava (ou do responsável definido) e o recém-chegado ganha as suas.
 - **Desativar** remove apenas tarefas `pendente` e não editadas (`tarefas.editada`, mantida pelo banco:
   editar campos ou mexer em subitens marca a tarefa).
 
