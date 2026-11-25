@@ -81,6 +81,7 @@ src/
     (app)/painel/      T4 · contagem regressiva, progresso, orçamento, próximas tarefas
     (app)/tarefas/     T5 · lista agrupada, filtros, nova/editar/concluir/excluir
     (app)/configuracoes/ T6 · dados do casamento com prévia da mudança de data, convite, perfil
+    (app)/votos/       votos de cada um: editor privado, salvamento automático, impressão
 ```
 
 ## Decisões que valem conhecer
@@ -92,6 +93,8 @@ src/
 - **Cache Components está ligado.** Toda leitura de sessão fica dentro de `<Suspense>`; o casco das páginas
   é pré-renderizado e o conteúdo do casal chega por streaming. Nada do casal é cacheado no servidor.
 - **Server Actions sempre reautenticam** pela DAL e filtram por `evento_id`, além do RLS.
+- **Votos são privados de verdade.** Só o autor lê o texto (RLS); o parceiro vê apenas a situação, pela RPC
+  `status_votos`, que nunca devolve o texto. A escrita é só pela RPC `salvar_votos`.
 - **`database.types.ts` foi escrito à mão** a partir das migrations. Rode `npm run db:types` assim que tiver o
   Supabase local e faça commit do resultado.
 

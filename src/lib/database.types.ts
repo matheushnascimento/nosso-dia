@@ -358,18 +358,46 @@ export type Database = {
           modelo_id: string;
           texto: string;
           ordem: number;
+          link: string | null;
         };
         Insert: {
           id?: string;
           modelo_id: string;
           texto: string;
           ordem?: number;
+          link?: string | null;
         };
         Update: {
           id?: string;
           modelo_id?: string;
           texto?: string;
           ordem?: number;
+          link?: string | null;
+        };
+        Relationships: [];
+      };
+      votos: {
+        Row: {
+          evento_id: string;
+          autor_id: string;
+          texto: string;
+          pronto: boolean;
+          atualizado_em: string;
+        };
+        // escrita só pela RPC salvar_votos (o banco não dá insert/update na tabela)
+        Insert: {
+          evento_id: string;
+          autor_id?: string;
+          texto?: string;
+          pronto?: boolean;
+          atualizado_em?: string;
+        };
+        Update: {
+          evento_id?: string;
+          autor_id?: string;
+          texto?: string;
+          pronto?: boolean;
+          atualizado_em?: string;
         };
         Relationships: [];
       };
@@ -477,6 +505,18 @@ export type Database = {
       eh_membro: {
         Args: { p_evento_id: string };
         Returns: boolean;
+      };
+      hoje_sp: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
+      };
+      salvar_votos: {
+        Args: { p_evento_id: string; p_texto: string; p_pronto?: boolean };
+        Returns: { pronto: boolean; atualizado_em: string }[];
+      };
+      status_votos: {
+        Args: { p_evento_id: string };
+        Returns: { autor_id: string; pronto: boolean; comecou: boolean; atualizado_em: string | null }[];
       };
       obter_convite: {
         Args: { p_token: string };
