@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nosso Dia
 
-## Getting Started
+Planejamento de casamento para os dois, num só lugar. Este repositório contém o **M0 · Fundação**:
+conta do casal, onboarding, convite do parceiro, painel e um checklist cujos prazos se ajustam
+sozinhos à data do casamento.
 
-First, run the development server:
+**Stack:** Next.js 16 (App Router, Cache Components, Server Actions) · Supabase (Postgres + Auth + RLS) · Tailwind CSS 4.
+
+## Rodando localmente
+
+Pré-requisitos: Node 20+, Docker (para o Supabase local).
 
 ```bash
+npm install
+npm run db:start        # sobe o Supabase local (Docker) e aplica as migrations
+cp .env.example .env.local   # preencha com a URL e a chave de `npx supabase status`
+npm run db:types        # regenera src/lib/database.types.ts a partir do banco
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Na primeira vez, rode `npx supabase init` antes do `db:start` para criar `supabase/config.toml`
+(a pasta `supabase/migrations` já existe e é mantida).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Com o Supabase local, os e-mails de confirmação caem no Inbucket/Mailpit (`npx supabase status` mostra a URL).
+Para não precisar confirmar e-mail em desenvolvimento, desligue *Confirm email* em `config.toml`
+(`[auth.email] enable_confirmations = false`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Scripts
 
-## Learn More
+| Script | O que faz |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Build de produção (exige as variáveis de `.env.example`) |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | Gera tipos de rota e roda `tsc` |
+| `npm run db:start` / `db:reset` | Supabase local / reaplica todas as migrations |
+| `npm run db:types` | Regenera os tipos do banco |
 
-To learn more about Next.js, take a look at the following resources:
+## Estrutura
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```text
+supabase/
+  migrations/          schema, regras (RPCs, triggers, view), RLS, catálogo de tarefas
+  testes/              testes SQL dos critérios de aceite (rodam num Postgres comum)
+src/
+  proxy.ts             renova a sessão e redireciona rotas protegidas (antigo middleware)
+  lib/
+    dal.ts             Data Access Layer: único ponto que lê a sessão (getSessao, requireEvento…)
+    supabase/server.ts cliente Supabase por requisição
+    database.types.ts  tipos do banco (regenerar com db:types)
+    tarefas.ts         leitura e ordenação das tarefas
+    datas.ts           datas em America/Sao_Paulo
+    formato.ts         dinheiro em centavos, parse de formulários
+    rotulos.ts         categorias, grupos, UFs
+    erros.ts           mensagens de erro em português (mapeia os `hint` do banco)
+    email.ts           envio do convite via Resend (opcional)
+  components/          UI básica (ui.tsx), botão com estado de envio, campos de data
+  app/
+    page.tsx           landing (estática)
+    (auth)/            entrar, cadastrar, recuperar-senha, nova-senha + actions
+    auth/callback/     troca o ?code= dos links de e-mail por sessão
+    onboarding/        T2 · 4 passos → rpc criar_evento
+    convite/[token]/   T3 · landing do convite e aceite
+    (app)/painel/      T4 · contagem regressiva, progresso, orçamento, próximas tarefas
+    (app)/tarefas/     T5 · lista agrupada, filtros, nova/editar/concluir/excluir
+    (app)/configuracoes/ T6 · dados do casamento com prévia da mudança de data, convite, perfil
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Decisões que valem conhecer
 
-## Deploy on Vercel
+- **O prazo não é gravado.** A view `tarefas_com_prazo` calcula `prazo_efetivo` e `grupo` a cada leitura;
+  mudar a data do casamento reorganiza tudo sem job.
+- **Escrita estrutural só por RPC.** Criar casamento e entrar como parceiro passam por funções no banco
+  (`criar_evento`, `aceitar_convite`); o RLS bloqueia o resto.
+- **Cache Components está ligado.** Toda leitura de sessão fica dentro de `<Suspense>`; o casco das páginas
+  é pré-renderizado e o conteúdo do casal chega por streaming. Nada do casal é cacheado no servidor.
+- **Server Actions sempre reautenticam** pela DAL e filtram por `evento_id`, além do RLS.
+- **`database.types.ts` foi escrito à mão** a partir das migrations. Rode `npm run db:types` assim que tiver o
+  Supabase local e faça commit do resultado.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Testes do banco sem Docker
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+cd supabase
+psql -d <banco_vazio> -f testes/00_stub_supabase.sql
+for f in migrations/*.sql; do psql -d <banco_vazio> -v ON_ERROR_STOP=1 -f "$f"; done
+psql -d <banco_vazio> -f testes/10_testes.sql
+```
+
+Detalhes do contrato entre telas e banco: [`supabase/README.md`](supabase/README.md).

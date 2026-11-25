@@ -1,26 +1,50 @@
 @import "tailwindcss";
 
+/* Paleta "papelaria": papel, tinta e um rosé discreto. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --papel: #faf7f2;
+  --cartao: #ffffff;
+  --tinta: #2b2622;
+  --tinta-suave: #6f655d;
+  --linha: #e7dfd5;
+  --rose: #b4756a;
+  --rose-claro: #f4e6e1;
+  --salvia: #6e8268;
+  --salvia-claro: #e6ece3;
+  --alerta: #a5432f;
+  --alerta-claro: #f8e4df;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-papel: var(--papel);
+  --color-cartao: var(--cartao);
+  --color-tinta: var(--tinta);
+  --color-tinta-suave: var(--tinta-suave);
+  --color-linha: var(--linha);
+  --color-rose: var(--rose);
+  --color-rose-claro: var(--rose-claro);
+  --color-salvia: var(--salvia);
+  --color-salvia-claro: var(--salvia-claro);
+  --color-alerta: var(--alerta);
+  --color-alerta-claro: var(--alerta-claro);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-cormorant), ui-serif, Georgia, serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--papel);
+  color: var(--tinta);
+}
+
+:focus-visible {
+  outline: 2px solid var(--rose);
+  outline-offset: 2px;
+}
+
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
 }
