@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ItemTarefa } from "@/app/(app)/tarefas/item-tarefa";
+import { EscolhaPacote } from "@/components/escolha-pacote";
 import { BotaoLink, Cartao, Esqueleto, Subtitulo } from "@/components/ui";
 import { getMembros, requireEvento } from "@/lib/dal";
 import { dataPorExtenso, diasEntre, hojeSP, horario, mesPorExtenso } from "@/lib/datas";
 import { formatarBRL, pluralizar } from "@/lib/formato";
+import { listarPacotes } from "@/lib/pacotes";
+import { rotuloGrupoEscolha } from "@/lib/rotulos";
 import { listarTarefas } from "@/lib/tarefas";
 
 export const metadata: Metadata = { title: "Painel" };
@@ -31,7 +34,14 @@ function EsqueletoPainel() {
 
 async function Conteudo({ searchParams }: { searchParams: PageProps<"/painel">["searchParams"] }) {
   const ctx = await requireEvento();
-  const [tarefas, membros, params] = await Promise.all([listarTarefas(ctx), getMembros(ctx), searchParams]);
+  const [tarefas, membros, pacotes, params] = await Promise.all([
+    listarTarefas(ctx),
+    getMembros(ctx),
+    listarPacotes(ctx),
+    searchParams,
+  ]);
+  // Decisões pendentes que destravam checklists (ex.: tipo de cerimônia)
+  const decisoes = pacotes.escolhas.filter((g) => !g.escolhido);
   const { evento } = ctx;
   const hoje = hojeSP();
 
@@ -140,6 +150,21 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/painel">["
           )}
         </Cartao>
       </div>
+
+      {decisoes.map((g) => (
+        <Cartao key={g.grupo} className="border-rose/40">
+          <p className="mb-1 text-sm uppercase tracking-[0.2em] text-rose">Decisão</p>
+          <p className="mb-4 text-sm text-tinta-suave">
+            Escolham para receber as tarefas desse caminho. Dá para mudar depois em Configurações.
+          </p>
+          <EscolhaPacote
+            pergunta={rotuloGrupoEscolha(g.grupo)}
+            opcoes={g.opcoes}
+            escolhido={null}
+            permitirNenhum={false}
+          />
+        </Cartao>
+      ))}
 
       <Cartao>
         <div className="mb-3 flex items-baseline justify-between">

@@ -41,6 +41,7 @@ aplicar nd_teste_b "$MIG"/202611250000*.sql
 aplicar nd_teste_b "$DIR/15_dados_pre_m1.sql"
 aplicar nd_teste_b "$MIG"/202611260000*.sql
 conferir "$("${PSQL[@]}" -d nd_teste_b -f "$DIR/20_testes_m1.sql" 2>&1)"
+conferir "$("${PSQL[@]}" -d nd_teste_b -f "$DIR/30_testes_cerimonia.sql" 2>&1)"
 
 echo
 if [ "$falhas" -gt 0 ]; then echo "❌ Falhas em $falhas rodada(s)."; exit 1; fi
