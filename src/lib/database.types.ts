@@ -185,6 +185,9 @@ export type Database = {
           ordem: number;
           ativo: boolean;
           criado_em: string;
+          pacote: string;
+          guia: string | null;
+          substitui: string[];
         };
         Insert: {
           id?: string;
@@ -196,6 +199,9 @@ export type Database = {
           ordem?: number;
           ativo?: boolean;
           criado_em?: string;
+          pacote?: string;
+          guia?: string | null;
+          substitui?: string[];
         };
         Update: {
           id?: string;
@@ -207,6 +213,9 @@ export type Database = {
           ordem?: number;
           ativo?: boolean;
           criado_em?: string;
+          pacote?: string;
+          guia?: string | null;
+          substitui?: string[];
         };
         Relationships: [];
       };
@@ -227,6 +236,7 @@ export type Database = {
           ordem: number;
           criado_em: string;
           atualizado_em: string;
+          editada: boolean;
         };
         Insert: {
           id?: string;
@@ -244,6 +254,7 @@ export type Database = {
           ordem?: number;
           criado_em?: string;
           atualizado_em?: string;
+          editada?: boolean;
         };
         Update: {
           id?: string;
@@ -261,6 +272,7 @@ export type Database = {
           ordem?: number;
           criado_em?: string;
           atualizado_em?: string;
+          editada?: boolean;
         };
         Relationships: [
           {
@@ -268,6 +280,124 @@ export type Database = {
             columns: ["evento_id"];
             isOneToOne: false;
             referencedRelation: "eventos";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      pacotes: {
+        Row: {
+          codigo: string;
+          nome: string;
+          descricao: string | null;
+          automatico: boolean;
+          grupo_escolha: string | null;
+          ordem: number;
+          ativo: boolean;
+        };
+        Insert: {
+          codigo: string;
+          nome: string;
+          descricao?: string | null;
+          automatico?: boolean;
+          grupo_escolha?: string | null;
+          ordem?: number;
+          ativo?: boolean;
+        };
+        Update: {
+          codigo?: string;
+          nome?: string;
+          descricao?: string | null;
+          automatico?: boolean;
+          grupo_escolha?: string | null;
+          ordem?: number;
+          ativo?: boolean;
+        };
+        Relationships: [];
+      };
+      evento_pacotes: {
+        Row: {
+          evento_id: string;
+          pacote: string;
+          ativado_em: string;
+          ativado_por: string | null;
+        };
+        Insert: {
+          evento_id: string;
+          pacote: string;
+          ativado_em?: string;
+          ativado_por?: string | null;
+        };
+        Update: {
+          evento_id?: string;
+          pacote?: string;
+          ativado_em?: string;
+          ativado_por?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "evento_pacotes_pacote_fkey";
+            columns: ["pacote"];
+            isOneToOne: false;
+            referencedRelation: "pacotes";
+            referencedColumns: ["codigo"];
+          },
+        ];
+      };
+      tarefa_modelo_subitens: {
+        Row: {
+          id: string;
+          modelo_id: string;
+          texto: string;
+          ordem: number;
+        };
+        Insert: {
+          id?: string;
+          modelo_id: string;
+          texto: string;
+          ordem?: number;
+        };
+        Update: {
+          id?: string;
+          modelo_id?: string;
+          texto?: string;
+          ordem?: number;
+        };
+        Relationships: [];
+      };
+      tarefa_subitens: {
+        Row: {
+          id: string;
+          tarefa_id: string;
+          modelo_subitem_id: string | null;
+          texto: string;
+          feito: boolean;
+          ordem: number;
+          criado_em: string;
+        };
+        Insert: {
+          id?: string;
+          tarefa_id: string;
+          modelo_subitem_id?: string | null;
+          texto: string;
+          feito?: boolean;
+          ordem?: number;
+          criado_em?: string;
+        };
+        Update: {
+          id?: string;
+          tarefa_id?: string;
+          modelo_subitem_id?: string | null;
+          texto?: string;
+          feito?: boolean;
+          ordem?: number;
+          criado_em?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tarefa_subitens_tarefa_id_fkey";
+            columns: ["tarefa_id"];
+            isOneToOne: false;
+            referencedRelation: "tarefas";
             referencedColumns: ["id"];
           },
         ];
@@ -295,11 +425,28 @@ export type Database = {
           prazo_travado: boolean | null;
           prazo_aproximado: boolean | null;
           grupo: string | null;
+          editada: boolean | null;
+          pacote: string | null;
+          guia: string | null;
+          subitens_total: number | null;
+          subitens_feitos: number | null;
         };
         Relationships: [];
       };
     };
     Functions: {
+      ativar_pacote: {
+        Args: { p_evento_id: string; p_pacote: string };
+        Returns: { criadas: number; removidas: number }[];
+      };
+      desativar_pacote: {
+        Args: { p_evento_id: string; p_pacote: string };
+        Returns: number;
+      };
+      eh_membro_tarefa: {
+        Args: { p_tarefa_id: string };
+        Returns: boolean;
+      };
       aceitar_convite: {
         Args: { p_token: string };
         Returns: string;

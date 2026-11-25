@@ -58,12 +58,14 @@ src/
     dal.ts             Data Access Layer: único ponto que lê a sessão (getSessao, requireEvento…)
     supabase/server.ts cliente Supabase por requisição
     database.types.ts  tipos do banco (regenerar com db:types)
-    tarefas.ts         leitura e ordenação das tarefas
+    tarefas.ts         leitura e ordenação das tarefas e dos subitens
+    pacotes.ts         checklists ativos e grupos de escolha
     datas.ts           datas em America/Sao_Paulo
     formato.ts         dinheiro em centavos, parse de formulários
     rotulos.ts         categorias, grupos, UFs
     erros.ts           mensagens de erro em português (mapeia os `hint` do banco)
     email.ts           envio do convite via Resend (opcional)
+  conteudo/guias/      guias estáticos (/guias/<slug>), ligados a tarefas por `tarefa_modelos.guia`
   components/          UI básica (ui.tsx), botão com estado de envio, campos de data
   app/
     page.tsx           landing (estática)
@@ -91,10 +93,7 @@ src/
 ## Testes do banco sem Docker
 
 ```bash
-cd supabase
-psql -d <banco_vazio> -f testes/00_stub_supabase.sql
-for f in migrations/*.sql; do psql -d <banco_vazio> -v ON_ERROR_STOP=1 -f "$f"; done
-psql -d <banco_vazio> -f testes/10_testes.sql
+PGHOST=localhost PGUSER=postgres supabase/testes/rodar.sh
 ```
 
 Detalhes do contrato entre telas e banco: [`supabase/README.md`](supabase/README.md).

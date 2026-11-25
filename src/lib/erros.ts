@@ -6,6 +6,8 @@ const POR_HINT: Record<string, string> = {
   convite_invalido: "Este convite não é mais válido. Peça um novo link.",
   email_diferente:
     "Este convite foi enviado para outro e-mail. Entre com a conta do e-mail convidado.",
+  pacote_automatico: "Este checklist faz parte de todo casamento e não pode ser removido.",
+  pacote_inexistente: "Esse checklist não está disponível.",
 };
 
 const POR_CODIGO_AUTH: Record<string, string> = {

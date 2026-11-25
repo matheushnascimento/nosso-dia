@@ -6,7 +6,7 @@ import { getMembros, requireEvento } from "@/lib/dal";
 import { hojeSP } from "@/lib/datas";
 import { CATEGORIAS, GRUPOS } from "@/lib/rotulos";
 import type { Tarefa } from "@/lib/tarefas";
-import { listarTarefas } from "@/lib/tarefas";
+import { listarSubitens, listarTarefas } from "@/lib/tarefas";
 import { FormNovaTarefa } from "./form-tarefa";
 import { ItemTarefa } from "./item-tarefa";
 
@@ -26,7 +26,12 @@ function lerFiltros(sp: Record<string, string | string[] | undefined>): Filtros 
 export default function Tarefas({ searchParams }: PageProps<"/tarefas">) {
   return (
     <div className="flex flex-col gap-6">
-      <Titulo>Tarefas</Titulo>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <Titulo>Tarefas</Titulo>
+        <Link href="/guias/como-funciona-o-checklist" className="text-sm text-tinta-suave underline-offset-4 hover:text-tinta hover:underline">
+          Como funciona o checklist?
+        </Link>
+      </div>
       <Suspense fallback={<Esqueleto className="h-[28rem]" />}>
         <Conteudo searchParams={searchParams} />
       </Suspense>
@@ -39,6 +44,10 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/tarefas">[
   const [todas, membros, sp] = await Promise.all([listarTarefas(ctx), getMembros(ctx), searchParams]);
   const filtros = lerFiltros(sp);
   const hoje = hojeSP();
+  const subitens = await listarSubitens(
+    ctx,
+    todas.filter((t) => t.subitensTotal > 0).map((t) => t.id),
+  );
 
   const filtradas = todas.filter((t) => {
     if (filtros.categoria && t.categoria !== filtros.categoria) return false;
@@ -100,7 +109,7 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/tarefas">[
           const conteudo = (
             <ul className="divide-y divide-linha">
               {lista.map((t) => (
-                <ItemTarefa key={t.id} tarefa={t} membros={membros} hoje={hoje} />
+                <ItemTarefa key={t.id} tarefa={t} membros={membros} hoje={hoje} subitens={subitens.get(t.id)} />
               ))}
             </ul>
           );
