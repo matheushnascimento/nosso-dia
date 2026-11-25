@@ -55,6 +55,7 @@ done
 conferir "$("${PSQL[@]}" -d nd_teste_c -f "$DIR/30_testes_cerimonia.sql" 2>&1)"
 conferir "$("${PSQL[@]}" -d nd_teste_c -f "$DIR/40_testes_aliancas_lua_de_mel_kit.sql" 2>&1)"
 conferir "$("${PSQL[@]}" -d nd_teste_c -f "$DIR/50_testes_trajes_beleza.sql" 2>&1)"
+conferir "$("${PSQL[@]}" -d nd_teste_c -f "$DIR/60_testes_data_passada.sql" 2>&1)"
 
 echo
 if [ "$falhas" -gt 0 ]; then echo "❌ Falhas em $falhas rodada(s)."; exit 1; fi

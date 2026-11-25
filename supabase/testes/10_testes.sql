@@ -111,7 +111,10 @@ reset role;
 -- ===== 'atrasadas' só para tarefa que já estava no evento antes de vencer
 update tarefas set criado_em = now() - interval '60 days' where titulo = 'Montar o kit do dia D';
 set role authenticated;
+-- simula a passagem do tempo: a regra "data no passado" só vale para quem edita pelo app
+select set_config('nosso_dia.sistema', '1', false) \g /dev/null
 update eventos set data_status = 'definida', data = current_date - 10 where id = :'evento';  -- kit D-3 venceu há 13 dias
+select set_config('nosso_dia.sistema', '', false) \g /dev/null
 select 'tarefa antiga vencida = atrasada; nova vencida = começar agora' as teste,
   (select grupo from tarefas_com_prazo where titulo='Montar o kit do dia D') = 'atrasadas'
   and (select grupo from tarefas_com_prazo where titulo='Reconfirmar todos os fornecedores') = 'comecar_agora' as ok;

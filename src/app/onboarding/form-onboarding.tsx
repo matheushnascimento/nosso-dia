@@ -18,7 +18,7 @@ const PASSOS = [
  * Todos os campos ficam montados (só os passos inativos são escondidos),
  * então o formulário inteiro vai junto no envio final.
  */
-export function FormOnboarding({ meuNome }: { meuNome: string }) {
+export function FormOnboarding({ meuNome, hoje }: { meuNome: string; hoje: string }) {
   const [passo, setPasso] = useState(0);
   const [estado, acao, pendente] = useActionState(criarEvento, ESTADO_INICIAL);
   const [nomes, setNomes] = useState({ nome1: meuNome, nome2: "" });
@@ -89,7 +89,7 @@ export function FormOnboarding({ meuNome }: { meuNome: string }) {
       </section>
 
       <section data-passo={1} hidden={passo !== 1}>
-        <CamposData />
+        <CamposData hoje={hoje} />
       </section>
 
       <section data-passo={2} hidden={passo !== 2} className="grid grid-cols-[1fr_6rem] gap-3">
@@ -146,12 +146,15 @@ export function FormOnboarding({ meuNome }: { meuNome: string }) {
               Pular
             </Botao>
           )}
+          {/* `key` diferente: sem ela o React reaproveita o mesmo <button> e só troca o type
+              para "submit" no meio do clique em "Continuar", e o navegador envia o formulário
+              ao terminar o clique, pulando o último passo. */}
           {ultimo ? (
-            <Botao type="submit" disabled={pendente} aria-busy={pendente}>
+            <Botao key="enviar" type="submit" disabled={pendente} aria-busy={pendente}>
               {pendente ? "Preparando tudo…" : "Criar nosso casamento"}
             </Botao>
           ) : (
-            <Botao type="button" onClick={avancar}>
+            <Botao key="continuar" type="button" onClick={avancar}>
               Continuar
             </Botao>
           )}

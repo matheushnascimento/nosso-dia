@@ -46,7 +46,7 @@ async function Conteudo() {
       <div className="flex flex-col gap-6">
         <Cartao>
           <Subtitulo className="mb-5">O casamento</Subtitulo>
-          <FormEvento evento={ctx.evento} />
+          <FormEvento evento={ctx.evento} hoje={hoje} />
         </Cartao>
 
         <Cartao id="checklists">
