@@ -61,6 +61,8 @@ export async function recuperarSenha(_: EstadoForm, fd: FormData): Promise<Estad
   if (error && error.code?.startsWith("over_")) {
     return { erro: mensagemDeErro(error), campos: { email } };
   }
+  // Para o casal a resposta não muda, mas o erro precisa aparecer no log do servidor.
+  if (error) console.error("[nosso-dia] recuperarSenha:", error.code ?? "", error.message);
   // Mesma resposta exista ou não a conta, para não revelar quem está cadastrado.
   return { ok: `Se houver uma conta para ${email}, enviamos um link para criar uma nova senha.` };
 }
