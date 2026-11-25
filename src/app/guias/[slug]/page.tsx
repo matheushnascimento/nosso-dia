@@ -36,8 +36,8 @@ export default async function PaginaGuia({ params }: PageProps<"/guias/[slug]">)
 
         {guia.informativo && (
           <p role="note" className="mt-6 rounded-xl bg-rose-claro px-4 py-3 text-sm">
-            Conteúdo informativo. Exigências e prazos podem variar; confirme com o órgão ou profissional responsável
-            na sua cidade.
+            {guia.aviso ??
+              "Conteúdo informativo. Exigências e prazos podem variar; confirme com o órgão ou profissional responsável na sua cidade."}
           </p>
         )}
 

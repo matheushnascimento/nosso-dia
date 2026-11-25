@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import ComoFuncionaOChecklist from "./como-funciona-o-checklist";
 import DocumentosDeViagem from "./documentos-de-viagem";
+import RegimeDeBens from "./regime-de-bens";
 
 /**
  * Guias estáticos do app, servidos em /guias/<slug>.
@@ -13,6 +14,8 @@ export type Guia = {
   resumo: string;
   /** Mostra o aviso de conteúdo informativo (jurídico, saúde, documentos). */
   informativo?: boolean;
+  /** Texto do aviso informativo, quando o padrão não basta. */
+  aviso?: string;
   Conteudo: ComponentType;
 };
 
@@ -29,6 +32,15 @@ const GUIAS: Guia[] = [
     resumo: "O que conferir antes da lua de mel (passaporte, visto, vacinas, seguro) e onde confirmar.",
     informativo: true,
     Conteudo: DocumentosDeViagem,
+  },
+  {
+    slug: "regime-de-bens",
+    titulo: "Casamento civil e regime de bens",
+    resumo: "Os quatro regimes com um exemplo, quando é preciso pacto antenupcial e o civil × religioso com efeito civil.",
+    informativo: true,
+    aviso:
+      "Conteúdo informativo, não é aconselhamento jurídico. Documentos, taxas e procedimentos variam por estado e por cartório: confirme com o cartório da sua cidade e, se precisar, com um advogado.",
+    Conteudo: RegimeDeBens,
   },
 ];
 
