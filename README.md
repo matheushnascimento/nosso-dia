@@ -64,8 +64,13 @@ Resend. Variáveis só no ambiente **Production**; os previews ficam sem banco e
 
 Nenhuma chave secreta vai em `NEXT_PUBLIC_*`: essas são embutidas no JavaScript do navegador.
 
-**Migrations não rodam no build**, de propósito (um preview nunca mexe no banco de produção). Antes do deploy
-que depende delas, rode da sua máquina com a conexão direta do Neon:
+**Migrations no deploy de produção.** O `npm run build` começa por `node scripts/db.mjs deploy`, que só age no
+deploy de produção da Vercel (`VERCEL_ENV=production`): aplica as migrations pendentes pela conexão direta
+(`DATABASE_URL_UNPOOLED`) antes do `next build`. Previews e builds locais nunca tocam no banco. Se uma migration
+falhar, o build falha e a versão anterior continua no ar. Por isso as migrations precisam ser compatíveis com o
+código que ainda está no ar durante o build (criar tabela ou coluna nova: sim; apagar ou renomear: em dois passos).
+
+Para aplicar à mão (por exemplo, antes de um merge), da sua máquina:
 
 ```bash
 MIGRATIONS_DATABASE_URL='<DATABASE_URL_UNPOOLED do Neon>' npm run db:migrate
@@ -75,9 +80,8 @@ O `db:migrate` é idempotente, trava contra execuções simultâneas e recusa mi
 editadas. Nunca rode `db:reset` nem os testes (`db:test:app`) contra produção.
 
 Para lançar o app num projeto da Vercel que está mostrando o placeholder:
-1. Aplique as migrations (acima).
-2. Configure as variáveis da tabela (Production) e remova `EM_CONSTRUCAO`, se existir.
-3. Faça um novo deploy. As `NEXT_PUBLIC_*` são embutidas no build, então só salvar as variáveis não basta.
+1. Configure as variáveis da tabela (Production) e remova `EM_CONSTRUCAO`, se existir.
+2. Faça um novo deploy (ele aplica as migrations). As `NEXT_PUBLIC_*` são embutidas no build, então só salvar as variáveis não basta.
 
 ## Estrutura
 
