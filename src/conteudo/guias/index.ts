@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import ComoFuncionaOChecklist from "./como-funciona-o-checklist";
 import DocumentosDeViagem from "./documentos-de-viagem";
 import RegimeDeBens from "./regime-de-bens";
+import VisitaAoEspaco from "./visita-ao-espaco";
 import { SLUGS_GUIAS, type SlugGuia } from "./slugs";
 
 /**
@@ -40,6 +41,11 @@ const GUIAS: Record<SlugGuia, Omit<Guia, "slug">> = {
     aviso:
       "Conteúdo informativo, não é aconselhamento jurídico. Documentos, taxas e procedimentos variam por estado e por cartório: confirme com o cartório da sua cidade e, se precisar, com um advogado.",
     Conteudo: RegimeDeBens,
+  },
+  "visita-ao-espaco": {
+    titulo: "O que perguntar na visita ao espaço",
+    resumo: "Valor, capacidade, horários, plano B e fornecedores: a lista para levar nas visitas.",
+    Conteudo: VisitaAoEspaco,
   },
 };
 
