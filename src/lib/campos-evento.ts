@@ -1,9 +1,9 @@
-import type { Enums } from "@/lib/database.types";
+import type { DataStatus } from "@/lib/tipos";
 import { hojeSP } from "@/lib/datas";
 import { texto } from "@/lib/formato";
 
 export type DadosData = {
-  data_status: Enums<"data_status">;
+  data_status: DataStatus;
   data?: string;
   horario_cerimonia?: string;
   horario_festa?: string;
@@ -16,7 +16,7 @@ export type DadosData = {
  */
 export function lerData(
   fd: FormData,
-  atual?: { data_status: Enums<"data_status">; data: string | null },
+  atual?: { data_status: DataStatus; data: string | null },
 ): DadosData | { erro: string } {
   const hoje = hojeSP();
   const status = texto(fd, "data_status");

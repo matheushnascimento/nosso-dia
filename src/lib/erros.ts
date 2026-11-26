@@ -1,4 +1,4 @@
-/** Traduz erros do Supabase (Postgres/Auth) em mensagens para o casal. */
+/** Traduz erros do banco e do login em mensagens para o casal. */
 
 const POR_HINT: Record<string, string> = {
   ja_tem_evento: "Você já participa de um casamento.",
@@ -25,13 +25,16 @@ const POR_CODIGO_AUTH: Record<string, string> = {
   INVALID_ORIGIN: "Não foi possível confirmar de onde veio o pedido. Recarregue a página e tente de novo.",
 };
 
-type ErroSupabase = { message?: string; hint?: string | null; code?: string | null } | null;
+type ErroBanco = { message?: string; hint?: string | null; code?: string | null };
 
-export function mensagemDeErro(erro: ErroSupabase, padrao = "Algo deu errado. Tente de novo."): string {
+/** Erros do Postgres (lançados pelo driver): regras de negócio vêm com `hint`. */
+export function mensagemDeErro(e: unknown, padrao = "Algo deu errado. Tente de novo."): string {
+  const erro = e as ErroBanco | null;
   if (!erro) return padrao;
   if (erro.hint && POR_HINT[erro.hint]) return POR_HINT[erro.hint];
   if (erro.code === "23505") return "Já existe um registro igual.";
   if (erro.code === "42501") return "Você não tem permissão para isso.";
+  console.error("[nosso-dia] erro do banco:", erro.code ?? "", erro.message ?? e);
   return padrao;
 }
 
@@ -57,4 +60,16 @@ export function mensagemDeErroAuth(e: unknown, padrao = "Algo deu errado. Tente 
   if (codigo && POR_CODIGO_AUTH[codigo]) return POR_CODIGO_AUTH[codigo];
   console.error("[nosso-dia] erro de autenticação:", e);
   return padrao;
+}
+
+/**
+ * Para ações sem mensagem na tela (marcar tarefa, excluir item…): um erro, como um id adulterado
+ * no formulário, vai para o log em vez de derrubar a página. O RLS já impediu o efeito.
+ */
+export async function semDerrubar(acao: string, fn: () => Promise<unknown>): Promise<void> {
+  try {
+    await fn();
+  } catch (e) {
+    console.error(`[nosso-dia] ${acao}:`, e);
+  }
 }

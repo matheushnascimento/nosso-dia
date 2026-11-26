@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { sair } from "@/app/(auth)/actions";
 import { BotaoLink, Botao, Esqueleto, Logo, Titulo } from "@/components/ui";
+import { sql } from "kysely";
 import { getSessao } from "@/lib/dal";
-import { createClient } from "@/lib/supabase/server";
+import { noBancoVisitante } from "@/lib/db";
 import { FormAceitar } from "./form-aceitar";
 
 export const metadata: Metadata = { title: "Convite" };
@@ -31,9 +32,16 @@ const MENSAGENS: Record<string, string> = {
 
 async function Conteudo({ params }: { params: PageProps<"/convite/[token]">["params"] }) {
   const { token } = await params;
-  const supabase = await createClient();
-  const { data } = UUID.test(token) ? await supabase.rpc("obter_convite", { p_token: token }) : { data: null };
-  const convite = data?.[0];
+  // Sem login: o convite é lido como visitante (obter_convite é a única porta aberta para `anon`).
+  const convite = UUID.test(token)
+    ? (
+        await noBancoVisitante((trx) =>
+          sql<{ nome_exibicao: string; email: string; situacao: string }>`
+            select nome_exibicao, email, situacao from obter_convite(${token}::uuid)
+          `.execute(trx),
+        )
+      ).rows[0]
+    : undefined;
 
   if (!convite) {
     return <Estado titulo="Convite não encontrado" texto="Confira se o link foi copiado inteiro." />;

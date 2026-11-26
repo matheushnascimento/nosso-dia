@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { CamposData } from "@/components/campos-data";
 import { Aviso, Botao, Campo, Entrada, Selecao } from "@/components/ui";
-import type { Tables } from "@/lib/database.types";
+import type { Evento } from "@/lib/tipos";
 import { pluralizar } from "@/lib/formato";
 import { UFS } from "@/lib/rotulos";
 import { salvarEvento, type Previa } from "./actions";
@@ -13,7 +13,7 @@ function centavosParaTexto(c: number | null) {
   return (c / 100).toLocaleString("pt-BR", { minimumFractionDigits: c % 100 ? 2 : 0 });
 }
 
-export function FormEvento({ evento, hoje }: { evento: Tables<"eventos">; hoje: string }) {
+export function FormEvento({ evento, hoje }: { evento: Evento; hoje: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [pendente, iniciar] = useTransition();
   const [previa, setPrevia] = useState<Previa | null>(null);

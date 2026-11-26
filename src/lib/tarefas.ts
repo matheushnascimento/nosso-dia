@@ -1,6 +1,7 @@
 import "server-only";
-import type { ContextoComEvento } from "@/lib/dal";
-import type { Database } from "@/lib/database.types";
+import type { Selectable } from "kysely";
+import { consultar, type ContextoComEvento } from "@/lib/dal";
+import type { TarefasComPrazo } from "@/lib/db.types";
 import { ORDEM_GRUPO } from "@/lib/rotulos";
 
 /** Linha da view com os campos que o front usa, já sem os nulos da view. */
@@ -27,8 +28,7 @@ export type Tarefa = {
 
 export type Subitem = { id: string; tarefaId: string; texto: string; feito: boolean; doModelo: boolean; link: string | null };
 
-// Acesso direto ao tipo: funciona com os tipos escritos à mão e com os gerados (`npm run db:types`).
-type LinhaTarefa = Database["public"]["Views"]["tarefas_com_prazo"]["Row"];
+type LinhaTarefa = Selectable<TarefasComPrazo>;
 
 function normalizar(t: LinhaTarefa): Tarefa {
   return {
@@ -66,12 +66,10 @@ export function compararTarefas(a: Tarefa, b: Tarefa): number {
 }
 
 export async function listarTarefas(ctx: ContextoComEvento): Promise<Tarefa[]> {
-  const { data, error } = await ctx.supabase
-    .from("tarefas_com_prazo")
-    .select("*")
-    .eq("evento_id", ctx.evento.id);
-  if (error) throw new Error(`Erro ao carregar tarefas: ${error.message}`);
-  return (data ?? []).map(normalizar).sort(compararTarefas);
+  const linhas = await consultar(ctx, (trx) =>
+    trx.selectFrom("tarefas_com_prazo").selectAll().where("evento_id", "=", ctx.evento.id).execute(),
+  );
+  return linhas.map(normalizar).sort(compararTarefas);
 }
 
 /** Subitens das tarefas informadas, agrupados por tarefa e em ordem. */
@@ -81,19 +79,19 @@ export async function listarSubitens(
 ): Promise<Map<string, Subitem[]>> {
   const mapa = new Map<string, Subitem[]>();
   if (!tarefaIds.length) return mapa;
-  const [{ data, error }, { data: links, error: erroLinks }] = await Promise.all([
-    ctx.supabase
-      .from("tarefa_subitens")
-      .select("id, tarefa_id, texto, feito, modelo_subitem_id")
-      .in("tarefa_id", tarefaIds)
-      .order("ordem")
-      .order("criado_em"),
+  const { itens, links } = await consultar(ctx, async (trx) => ({
+    itens: await trx
+      .selectFrom("tarefa_subitens")
+      .select(["id", "tarefa_id", "texto", "feito", "modelo_subitem_id"])
+      .where("tarefa_id", "in", tarefaIds)
+      .orderBy("ordem")
+      .orderBy("criado_em")
+      .execute(),
     // poucos itens do catálogo têm link (ex.: "Votos impressos" → /votos)
-    ctx.supabase.from("tarefa_modelo_subitens").select("id, link").not("link", "is", null),
-  ]);
-  if (error || erroLinks) throw new Error(`Erro ao carregar itens: ${(error ?? erroLinks)!.message}`);
-  const linkPorModelo = new Map((links ?? []).map((l) => [l.id, l.link]));
-  for (const s of data ?? []) {
+    links: await trx.selectFrom("tarefa_modelo_subitens").select(["id", "link"]).where("link", "is not", null).execute(),
+  }));
+  const linkPorModelo = new Map(links.map((l) => [l.id, l.link]));
+  for (const s of itens) {
     const lista = mapa.get(s.tarefa_id) ?? [];
     lista.push({
       id: s.id,

@@ -1,13 +1,11 @@
 # Nosso Dia
 
-Planejamento de casamento para os dois, num só lugar. Este repositório contém o **M0 · Fundação**:
-conta do casal, onboarding, convite do parceiro, painel e um checklist cujos prazos se ajustam
-sozinhos à data do casamento.
+Planejamento de casamento para os dois, num só lugar: conta do casal, onboarding, convite do parceiro,
+painel, checklists guiados (cerimônia, civil, trajes, kit do dia D…) cujos prazos se ajustam sozinhos à data
+do casamento, e os votos de cada um.
 
-**Stack:** Next.js 16 (App Router, Cache Components, Server Actions) · Postgres com RLS (Neon em produção) · Tailwind CSS 4.
-
-> **Migração em andamento** (milestone "Migração · Neon + Better Auth"): banco em Postgres puro (`db/`) e
-> login com Better Auth já funcionam; as telas ainda leem os dados pelo Supabase até a #27.
+**Stack:** Next.js 16 (App Router, Cache Components, Server Actions) · Postgres com RLS (Neon em produção) ·
+Better Auth · Kysely · Resend · Tailwind CSS 4.
 
 ## Rodando localmente
 
@@ -19,14 +17,12 @@ cp .env.example .env.local   # DATABASE_URL já aponta para o Postgres local; ge
 npm run db:start             # Postgres 17 em Docker (porta 54320)
 npm run db:migrate           # aplica as migrations de db/migrations
 npm run db:test              # testes SQL do banco
+npm run db:test:app          # RLS pela camada do app (usa o banco do .env.local)
 npm run dev
 ```
 
 **Login:** Better Auth, com usuários e sessões no mesmo Postgres. Sem `RESEND_API_KEY`, os e-mails de confirmação
 e de nova senha não saem: o link aparece no terminal do `npm run dev`.
-
-Enquanto a migração não termina, as telas com dados ainda usam o Supabase local (`npx supabase start` e as
-variáveis `NEXT_PUBLIC_SUPABASE_*` do `.env.local`).
 
 Abrindo o `npm run dev` **de outro computador** (pelo IP ou nome da máquina)? Ponha esse endereço em
 `DEV_ORIGINS` no `.env.local` (ex.: `DEV_ORIGINS=192.168.0.10`) e em `NEXT_PUBLIC_SITE_URL`. Sem isso, o
@@ -45,6 +41,8 @@ onboarding não respondem) e o login recusa o pedido por vir de uma origem desco
 | `npm run db:migrate` / `db:status` | Aplica as migrations pendentes / mostra a situação |
 | `npm run db:reset` | Apaga e recria o banco **local** com todas as migrations |
 | `npm run db:test` | Testes SQL do banco (dentro do contêiner) |
+| `npm run db:test:app` | Teste de RLS pela camada do app (`comoUsuario`) |
+| `npm run db:types` | Gera `src/lib/db.types.ts` a partir do banco (`.kysely-codegenrc.json`) |
 
 ## Deploy e página "em construção"
 
@@ -63,25 +61,28 @@ db/
   migrations/          schema, regras (RPCs, triggers, view), RLS, catálogo de tarefas
   testes/              testes SQL dos critérios de aceite (rodam num Postgres comum)
 src/
-  proxy.ts             renova a sessão e redireciona rotas protegidas (antigo middleware)
+  proxy.ts             redireciona rotas protegidas e telas de visitante (antigo middleware)
   lib/
-    dal.ts             Data Access Layer: único ponto que lê a sessão (getSessao, requireEvento…)
-    supabase/server.ts cliente Supabase por requisição
-    database.types.ts  tipos do banco, gerados com `npm run db:types` (não editar à mão)
+    dal.ts             Data Access Layer: único ponto que lê a sessão (getSessao, consultar, requireEvento…)
+    auth.ts            Better Auth (e-mail e senha, confirmação, nova senha)
+    db.ts              conexões com o Postgres (app e login); acesso só por noBanco/noBancoVisitante
+    rls.ts             comoUsuario/comoVisitante: papel e identidade da requisição em cada transação
+    db.types.ts        tipos do banco, gerados com `npm run db:types` (não editar à mão)
+    tipos.ts           tipos de linha usados pelas telas (Evento, Convite…)
     tarefas.ts         leitura e ordenação das tarefas e dos subitens
     pacotes.ts         checklists ativos e grupos de escolha
     datas.ts           datas em America/Sao_Paulo
     formato.ts         dinheiro em centavos, parse de formulários
     rotulos.ts         categorias, grupos, UFs
     erros.ts           mensagens de erro em português (mapeia os `hint` do banco)
-    email.ts           envio do convite via Resend (opcional)
+    email.ts           e-mails via Resend (confirmação, nova senha, convite)
   conteudo/guias/      guias estáticos (/guias/<slug>), ligados a tarefas por `tarefa_modelos.guia`
   components/          UI básica (ui.tsx), botão com estado de envio, campos de data
   app/
     page.tsx           landing (estática)
     (auth)/            entrar, cadastrar, recuperar-senha, nova-senha + actions
-    auth/callback/     troca o ?code= dos links de e-mail por sessão
-    onboarding/        T2 · 4 passos → rpc criar_evento
+    api/auth/          endpoints do Better Auth (links de confirmação e de nova senha)
+    onboarding/        T2 · 4 passos → criar_evento
     convite/[token]/   T3 · landing do convite e aceite
     (app)/painel/      T4 · contagem regressiva, progresso, orçamento, próximas tarefas
     (app)/tarefas/     T5 · lista agrupada, filtros, nova/editar/concluir/excluir
@@ -97,12 +98,18 @@ src/
   (`criar_evento`, `aceitar_convite`); o RLS bloqueia o resto.
 - **Cache Components está ligado.** Toda leitura de sessão fica dentro de `<Suspense>`; o casco das páginas
   é pré-renderizado e o conteúdo do casal chega por streaming. Nada do casal é cacheado no servidor.
+- **Toda consulta roda como o usuário.** O app entra no banco como dono, mas cada consulta passa por
+  `consultar(sessao, ...)` (DAL), que abre uma transação com o papel `authenticated` e a identidade da sessão
+  (`auth.uid()`). O RLS vale sempre, como no Supabase. Visitante sem login: `noBancoVisitante` (papel `anon`).
 - **Server Actions sempre reautenticam** pela DAL e filtram por `evento_id`, além do RLS.
+- **Login fora do alcance do app.** As tabelas do Better Auth (`ba_*`) só são acessíveis ao dono; um trigger
+  copia cada conta para `auth.users`, que é o que o resto do banco usa.
 - **Votos são privados de verdade.** Só o autor lê o texto (RLS); o parceiro vê apenas a situação, pela RPC
   `status_votos`, que nunca devolve o texto. A escrita é só pela RPC `salvar_votos`.
 - **Migrations são imutáveis depois de aplicadas.** Para mudar algo, crie uma migration nova; o `db:migrate`
   recusa rodar se uma já aplicada foi editada.
-- **`database.types.ts`** ainda é o gerado pelo Supabase; na #27 ele dá lugar aos tipos gerados do Postgres.
+- **Tipos gerados do banco** (`npm run db:types`): datas como `"YYYY-MM-DD"`, timestamps como texto ISO e
+  centavos como número, que é como a conexão do app devolve.
 
 ## Testes do banco sem Docker
 

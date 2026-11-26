@@ -3,8 +3,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { auth } from "@/lib/auth";
-import type { Tables } from "@/lib/database.types";
-import { createClient, type SupabaseServer } from "@/lib/supabase/server";
+import { noBanco, type Trx } from "@/lib/db";
+import type { Evento } from "@/lib/tipos";
 
 /**
  * Data Access Layer: o único lugar que lê a sessão.
@@ -13,8 +13,6 @@ import { createClient, type SupabaseServer } from "@/lib/supabase/server";
  */
 
 export type Sessao = {
-  /** TEMPORÁRIO (até a #27): cliente Supabase sem sessão. As leituras de dados passam a ser SQL na #27. */
-  supabase: SupabaseServer;
   userId: string;
   email: string;
 };
@@ -25,11 +23,7 @@ export const getSessao = cache(async (): Promise<Sessao | null> => {
   const cabecalhos = await headers();
   const resultado = await auth().api.getSession({ headers: cabecalhos });
   if (!resultado) return null;
-  return {
-    supabase: await createClient(),
-    userId: resultado.user.id,
-    email: resultado.user.email.toLowerCase(),
-  };
+  return { userId: resultado.user.id, email: resultado.user.email.toLowerCase() };
 });
 
 export async function requireSessao(): Promise<Sessao> {
@@ -38,30 +32,33 @@ export async function requireSessao(): Promise<Sessao> {
   return sessao;
 }
 
+/** Roda consultas como o usuário logado: papel `authenticated`, RLS e `auth.uid()` valendo. */
+export function consultar<T>(sessao: Sessao, fn: (trx: Trx) => Promise<T>): Promise<T> {
+  return noBanco(sessao, fn);
+}
+
 export type Contexto = Sessao & {
   nome: string;
-  evento: Tables<"eventos"> | null;
+  evento: Evento | null;
 };
 
 export const getContexto = cache(async (): Promise<Contexto> => {
   const sessao = await requireSessao();
-  const { supabase, userId } = sessao;
-
-  const [{ data: perfil }, { data: membro }] = await Promise.all([
-    supabase.from("perfis").select("nome").eq("id", userId).maybeSingle(),
-    supabase.from("membros").select("evento_id").eq("usuario_id", userId).maybeSingle(),
-  ]);
-
-  let evento: Tables<"eventos"> | null = null;
-  if (membro) {
-    const { data } = await supabase.from("eventos").select("*").eq("id", membro.evento_id).single();
-    evento = data;
-  }
-
-  return { ...sessao, nome: perfil?.nome ?? "", evento };
+  return consultar(sessao, async (trx) => {
+    const [perfil, evento] = await Promise.all([
+      trx.selectFrom("perfis").select("nome").where("id", "=", sessao.userId).executeTakeFirst(),
+      trx
+        .selectFrom("membros")
+        .innerJoin("eventos", "eventos.id", "membros.evento_id")
+        .selectAll("eventos")
+        .where("membros.usuario_id", "=", sessao.userId)
+        .executeTakeFirst(),
+    ]);
+    return { ...sessao, nome: perfil?.nome ?? "", evento: evento ?? null };
+  });
 });
 
-export type ContextoComEvento = Contexto & { evento: Tables<"eventos"> };
+export type ContextoComEvento = Contexto & { evento: Evento };
 
 /** Exige usuário logado E com casamento criado; senão manda para o onboarding. */
 export async function requireEvento(): Promise<ContextoComEvento> {
@@ -73,14 +70,18 @@ export async function requireEvento(): Promise<ContextoComEvento> {
 export type Membro = { usuarioId: string; nome: string; souEu: boolean };
 
 export async function getMembros(ctx: ContextoComEvento): Promise<Membro[]> {
-  const { data } = await ctx.supabase
-    .from("membros")
-    .select("usuario_id, criado_em, perfis(nome)")
-    .eq("evento_id", ctx.evento.id)
-    .order("criado_em");
-  return (data ?? []).map((m) => ({
+  const linhas = await consultar(ctx, (trx) =>
+    trx
+      .selectFrom("membros")
+      .leftJoin("perfis", "perfis.id", "membros.usuario_id")
+      .select(["membros.usuario_id", "perfis.nome"])
+      .where("membros.evento_id", "=", ctx.evento.id)
+      .orderBy("membros.criado_em")
+      .execute(),
+  );
+  return linhas.map((m) => ({
     usuarioId: m.usuario_id,
-    nome: m.perfis?.nome || "Sem nome",
+    nome: m.nome || "Sem nome",
     souEu: m.usuario_id === ctx.userId,
   }));
 }
