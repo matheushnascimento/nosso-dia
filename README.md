@@ -46,12 +46,36 @@ onboarding não respondem) e o login recusa o pedido por vir de uma origem desco
 
 ## Deploy e página "em construção"
 
-Sem `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (ou com `EM_CONSTRUCAO=1`), o `proxy.ts`
-serve `public/em-construcao.html` em **todas** as rotas, com `noindex`. O build não precisa de nenhuma variável.
+Sem `DATABASE_URL` ou `BETTER_AUTH_SECRET` (ou com `EM_CONSTRUCAO=1`), o `proxy.ts` serve
+`public/em-construcao.html` em **todas** as rotas, com `noindex`. O build não precisa de nenhuma variável.
+
+Produção: Vercel + Neon (pela integração do Marketplace, que cria `DATABASE_URL` e `DATABASE_URL_UNPOOLED`) +
+Resend. Variáveis só no ambiente **Production**; os previews ficam sem banco e mostram o "em construção".
+
+| Variável | Valor |
+|---|---|
+| `DATABASE_URL` | criada pela integração do Neon (com pooler) |
+| `DATABASE_URL_UNPOOLED` | criada pela integração (conexão direta, usada pelas migrations) |
+| `BETTER_AUTH_SECRET` | `openssl rand -base64 32`, só deste ambiente (**secreta**) |
+| `NEXT_PUBLIC_SITE_URL` | `https://nossodia.mhdn.com.br` |
+| `RESEND_API_KEY` | chave do Resend (**secreta**) |
+| `EMAIL_REMETENTE` | `Nosso Dia <nao-responda@...>`, num domínio verificado no Resend |
+
+Nenhuma chave secreta vai em `NEXT_PUBLIC_*`: essas são embutidas no JavaScript do navegador.
+
+**Migrations não rodam no build**, de propósito (um preview nunca mexe no banco de produção). Antes do deploy
+que depende delas, rode da sua máquina com a conexão direta do Neon:
+
+```bash
+MIGRATIONS_DATABASE_URL='<DATABASE_URL_UNPOOLED do Neon>' npm run db:migrate
+```
+
+O `db:migrate` é idempotente, trava contra execuções simultâneas e recusa migrations já aplicadas que foram
+editadas. Nunca rode `db:reset` nem os testes (`db:test:app`) contra produção.
 
 Para lançar o app num projeto da Vercel que está mostrando o placeholder:
-1. Configure as variáveis do `.env.example` no projeto (Production).
-2. Remova `EM_CONSTRUCAO`, se existir.
+1. Aplique as migrations (acima).
+2. Configure as variáveis da tabela (Production) e remova `EM_CONSTRUCAO`, se existir.
 3. Faça um novo deploy. As `NEXT_PUBLIC_*` são embutidas no build, então só salvar as variáveis não basta.
 
 ## Estrutura
