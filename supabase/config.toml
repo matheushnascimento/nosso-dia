@@ -1,5 +1,5 @@
-# TEMPORÁRIO: Supabase local, ainda usado pelo login e pelas telas até a migração terminar
-# (milestone "Migração · Neon + Better Auth", sai na #27). As migrations agora ficam em db/migrations.
+# TEMPORÁRIO: Supabase local, ainda usado pelas telas para ler os dados até a #27 (o login já é Better Auth).
+# As migrations agora ficam em db/migrations.
 #
 # Configuração do Supabase local (`npx supabase start`).
 # Só o que difere do padrão da CLI; o resto vem dos valores padrão.

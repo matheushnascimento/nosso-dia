@@ -6,8 +6,8 @@ sozinhos à data do casamento.
 
 **Stack:** Next.js 16 (App Router, Cache Components, Server Actions) · Postgres com RLS (Neon em produção) · Tailwind CSS 4.
 
-> **Migração em andamento** (milestone "Migração · Neon + Better Auth"): o banco já roda em Postgres puro
-> (`db/`), mas o login e a leitura dos dados ainda passam pelo Supabase até as issues #26 e #27.
+> **Migração em andamento** (milestone "Migração · Neon + Better Auth"): banco em Postgres puro (`db/`) e
+> login com Better Auth já funcionam; as telas ainda leem os dados pelo Supabase até a #27.
 
 ## Rodando localmente
 
@@ -15,20 +15,23 @@ Pré-requisitos: Node 20+ e Docker.
 
 ```bash
 npm install
-cp .env.example .env.local   # DATABASE_URL já aponta para o Postgres local
+cp .env.example .env.local   # DATABASE_URL já aponta para o Postgres local; gere o BETTER_AUTH_SECRET
 npm run db:start             # Postgres 17 em Docker (porta 54320)
 npm run db:migrate           # aplica as migrations de db/migrations
 npm run db:test              # testes SQL do banco
 npm run dev
 ```
 
-Enquanto a migração não termina, o login e as telas ainda usam o Supabase local (`npx supabase start` e as
+**Login:** Better Auth, com usuários e sessões no mesmo Postgres. Sem `RESEND_API_KEY`, os e-mails de confirmação
+e de nova senha não saem: o link aparece no terminal do `npm run dev`.
+
+Enquanto a migração não termina, as telas com dados ainda usam o Supabase local (`npx supabase start` e as
 variáveis `NEXT_PUBLIC_SUPABASE_*` do `.env.local`).
 
 Abrindo o `npm run dev` **de outro computador** (pelo IP ou nome da máquina)? Ponha esse endereço em
 `DEV_ORIGINS` no `.env.local` (ex.: `DEV_ORIGINS=192.168.0.10`) e em `NEXT_PUBLIC_SITE_URL`. Sem isso, o
-servidor de desenvolvimento bloqueia os próprios scripts: a página carrega, mas botões como o
-"Continuar" do onboarding não respondem.
+servidor de desenvolvimento bloqueia os próprios scripts (a página carrega, mas botões como o "Continuar" do
+onboarding não respondem) e o login recusa o pedido por vir de uma origem desconhecida.
 
 ### Scripts
 

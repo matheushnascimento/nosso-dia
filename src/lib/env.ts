@@ -29,6 +29,9 @@ export function emConstrucao(): boolean {
 export function motivoEmConstrucao(): string | null {
   if (process.env.EM_CONSTRUCAO === "1") return "EM_CONSTRUCAO=1 está definido.";
   const faltando = [
+    !process.env.DATABASE_URL && "DATABASE_URL",
+    !process.env.BETTER_AUTH_SECRET && "BETTER_AUTH_SECRET",
+    // TEMPORÁRIO (até a #27): as telas ainda leem os dados pelo Supabase.
     !url && "NEXT_PUBLIC_SUPABASE_URL",
     !chave && "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   ].filter(Boolean);
