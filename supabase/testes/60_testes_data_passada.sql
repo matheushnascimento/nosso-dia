@@ -35,6 +35,8 @@ select pg_temp.ok('hoje é aceito',
   pg_temp.hint(format($$update eventos set data_status = 'definida', data = hoje_sp() where id = %L$$, :'ev')) is null);
 select pg_temp.ok('mudar para ontem é recusado',
   pg_temp.hint(format($$update eventos set data = hoje_sp() - 1 where id = %L$$, :'ev')) = 'data_passada');
+select pg_temp.ok('prévia de "ainda não sabemos" funciona sem p_data (como o app chama)',
+  pg_temp.hint(format($$select * from previa_mudanca_data(%L, 'indefinida')$$, :'ev')) is null);
 select pg_temp.ok('mudar para "ainda não sabemos" é aceito',
   pg_temp.hint(format($$update eventos set data_status = 'indefinida' where id = %L$$, :'ev')) is null);
 reset role;
