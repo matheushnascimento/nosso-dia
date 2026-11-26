@@ -19,7 +19,13 @@ export type Tarefa = {
   aproximado: boolean;
   grupo: string;
   ordem: number;
+  pacote: string | null;
+  guia: string | null;
+  subitensTotal: number;
+  subitensFeitos: number;
 };
+
+export type Subitem = { id: string; tarefaId: string; texto: string; feito: boolean; doModelo: boolean };
 
 function normalizar(t: Views<"tarefas_com_prazo">): Tarefa {
   return {
@@ -37,6 +43,10 @@ function normalizar(t: Views<"tarefas_com_prazo">): Tarefa {
     aproximado: Boolean(t.prazo_aproximado),
     grupo: t.grupo ?? "sem_prazo",
     ordem: t.ordem ?? 0,
+    pacote: t.pacote,
+    guia: t.guia,
+    subitensTotal: t.subitens_total ?? 0,
+    subitensFeitos: t.subitens_feitos ?? 0,
   };
 }
 
@@ -59,4 +69,26 @@ export async function listarTarefas(ctx: ContextoComEvento): Promise<Tarefa[]> {
     .eq("evento_id", ctx.evento.id);
   if (error) throw new Error(`Erro ao carregar tarefas: ${error.message}`);
   return (data ?? []).map(normalizar).sort(compararTarefas);
+}
+
+/** Subitens das tarefas informadas, agrupados por tarefa e em ordem. */
+export async function listarSubitens(
+  ctx: ContextoComEvento,
+  tarefaIds: string[],
+): Promise<Map<string, Subitem[]>> {
+  const mapa = new Map<string, Subitem[]>();
+  if (!tarefaIds.length) return mapa;
+  const { data, error } = await ctx.supabase
+    .from("tarefa_subitens")
+    .select("id, tarefa_id, texto, feito, modelo_subitem_id")
+    .in("tarefa_id", tarefaIds)
+    .order("ordem")
+    .order("criado_em");
+  if (error) throw new Error(`Erro ao carregar itens: ${error.message}`);
+  for (const s of data ?? []) {
+    const lista = mapa.get(s.tarefa_id) ?? [];
+    lista.push({ id: s.id, tarefaId: s.tarefa_id, texto: s.texto, feito: s.feito, doModelo: Boolean(s.modelo_subitem_id) });
+    mapa.set(s.tarefa_id, lista);
+  }
+  return mapa;
 }

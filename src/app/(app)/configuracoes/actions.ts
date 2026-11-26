@@ -132,3 +132,40 @@ export async function cancelarConvite(fd: FormData) {
     .eq("evento_id", ctx.evento.id);
   refresh();
 }
+
+/**
+ * Escolha de checklist num grupo (ex.: tipo de cerimônia).
+ * `pacote` vazio = "ainda não decidimos": desativa o escolhido atual do grupo.
+ */
+export async function escolherPacote(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
+  const ctx = await requireEvento();
+  const pacote = texto(fd, "pacote");
+  const atual = texto(fd, "atual");
+  if (pacote === atual) return {};
+
+  if (!pacote) {
+    if (!atual) return {};
+    const { data, error } = await ctx.supabase.rpc("desativar_pacote", {
+      p_evento_id: ctx.evento.id,
+      p_pacote: atual,
+    });
+    if (error) return { erro: mensagemDeErro(error) };
+    refresh();
+    return { ok: resumoTroca(0, data ?? 0) };
+  }
+
+  const { data, error } = await ctx.supabase.rpc("ativar_pacote", {
+    p_evento_id: ctx.evento.id,
+    p_pacote: pacote,
+  });
+  if (error || !data?.[0]) return { erro: mensagemDeErro(error) };
+  refresh();
+  return { ok: resumoTroca(data[0].criadas, data[0].removidas) };
+}
+
+function resumoTroca(criadas: number, removidas: number): string {
+  const partes = [];
+  if (criadas) partes.push(`${criadas} ${criadas === 1 ? "tarefa adicionada" : "tarefas adicionadas"}`);
+  if (removidas) partes.push(`${removidas} ${removidas === 1 ? "tarefa removida" : "tarefas removidas"}`);
+  return partes.length ? `Checklist atualizado: ${partes.join(", ")}.` : "Checklist atualizado.";
+}

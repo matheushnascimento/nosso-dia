@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { EscolhaPacote } from "@/components/escolha-pacote";
 import { Cartao, Esqueleto, Subtitulo, Titulo } from "@/components/ui";
 import { getMembros, requireEvento } from "@/lib/dal";
 import { dataCurta, hojeSP } from "@/lib/datas";
 import { SITE_URL } from "@/lib/env";
+import { listarPacotes } from "@/lib/pacotes";
+import { rotuloGrupoEscolha } from "@/lib/rotulos";
 import { cancelarConvite } from "./actions";
 import { FormEvento } from "./form-evento";
 import { CopiarLink, FormConvidar, FormMeuNome } from "./forms-membros";
@@ -23,7 +26,7 @@ export default function Configuracoes() {
 
 async function Conteudo() {
   const ctx = await requireEvento();
-  const membros = await getMembros(ctx);
+  const [membros, pacotes] = await Promise.all([getMembros(ctx), listarPacotes(ctx)]);
   const hoje = hojeSP();
 
   const { data: convite } =
@@ -40,10 +43,33 @@ async function Conteudo() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
-      <Cartao>
-        <Subtitulo className="mb-5">O casamento</Subtitulo>
-        <FormEvento evento={ctx.evento} />
-      </Cartao>
+      <div className="flex flex-col gap-6">
+        <Cartao>
+          <Subtitulo className="mb-5">O casamento</Subtitulo>
+          <FormEvento evento={ctx.evento} />
+        </Cartao>
+
+        <Cartao id="checklists">
+          <Subtitulo className="mb-1">Checklists</Subtitulo>
+          <p className="mb-5 text-sm text-tinta-suave">
+            Ativos: {pacotes.ativos.map((p) => p.nome).join(" · ") || "nenhum"}
+          </p>
+          {pacotes.escolhas.length > 0 ? (
+            <div className="flex flex-col gap-6">
+              {pacotes.escolhas.map((g) => (
+                <EscolhaPacote
+                  key={g.grupo}
+                  pergunta={rotuloGrupoEscolha(g.grupo)}
+                  opcoes={g.opcoes}
+                  escolhido={g.escolhido}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-tinta-suave">Em breve: checklists que dependem das escolhas de vocês.</p>
+          )}
+        </Cartao>
+      </div>
 
       <div className="flex flex-col gap-6">
         <Cartao id="membros">

@@ -1,10 +1,13 @@
+import Link from "next/link";
 import { Selo, cx } from "@/components/ui";
+import { obterGuia } from "@/conteudo/guias";
 import type { Membro } from "@/lib/dal";
 import { dataCurta, diasEntre } from "@/lib/datas";
 import { rotuloCategoria } from "@/lib/rotulos";
-import type { Tarefa } from "@/lib/tarefas";
+import type { Subitem, Tarefa } from "@/lib/tarefas";
 import { alternarTarefa, excluirTarefa } from "./actions";
 import { FormEditarTarefa } from "./form-tarefa";
+import { ListaSubitens } from "./subitens";
 
 function rotuloPrazo(t: Tarefa, hoje: string) {
   if (!t.prazo) return null;
@@ -18,17 +21,22 @@ export function ItemTarefa({
   tarefa: t,
   membros,
   hoje,
+  subitens = [],
   compacto = false,
 }: {
   tarefa: Tarefa;
   membros: Membro[];
   hoje: string;
+  /** Itens da tarefa (só usados fora do modo compacto). */
+  subitens?: Subitem[];
   compacto?: boolean;
 }) {
   const concluida = t.status === "concluida";
   const prazo = rotuloPrazo(t, hoje);
   const responsavel = membros.find((m) => m.usuarioId === t.responsavel);
   const quemConcluiu = membros.find((m) => m.usuarioId === t.concluidaPor);
+  const guia = t.guia ? obterGuia(t.guia) : undefined;
+  const itensCompletos = t.subitensTotal > 0 && t.subitensFeitos === t.subitensTotal;
 
   return (
     <li className="group py-3">
@@ -63,6 +71,11 @@ export function ItemTarefa({
                 {prazo}
               </Selo>
             )}
+            {t.subitensTotal > 0 && (
+              <Selo tom={itensCompletos ? "salvia" : "neutro"} title="Itens marcados">
+                ☑ {t.subitensFeitos}/{t.subitensTotal}
+              </Selo>
+            )}
             {!compacto && <Selo>{rotuloCategoria(t.categoria)}</Selo>}
             {responsavel && <Selo tom="salvia">{responsavel.souEu ? "Você" : responsavel.nome}</Selo>}
             {concluida && quemConcluiu && !compacto && (
@@ -70,6 +83,19 @@ export function ItemTarefa({
             )}
           </div>
           {!compacto && t.descricao && <p className="mt-1.5 text-sm text-tinta-suave">{t.descricao}</p>}
+          {!compacto && guia && (
+            <Link href={`/guias/${guia.slug}`} className="mt-1.5 inline-block text-sm text-rose underline-offset-4 hover:underline">
+              Ler guia: {guia.titulo} →
+            </Link>
+          )}
+          {!compacto && t.subitensTotal > 0 && (
+            <details className="mt-1.5" open={t.status === "pendente" && t.subitensFeitos > 0 && !itensCompletos}>
+              <summary className="cursor-pointer text-sm text-tinta-suave hover:text-tinta">
+                Itens ({t.subitensFeitos}/{t.subitensTotal})
+              </summary>
+              <ListaSubitens tarefaId={t.id} subitens={subitens} />
+            </details>
+          )}
         </div>
 
         {!compacto && (
@@ -79,6 +105,12 @@ export function ItemTarefa({
             </summary>
             <div className="absolute right-0 z-10 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-linha bg-cartao p-4 shadow-lg">
               <FormEditarTarefa tarefa={t} membros={membros} />
+              {t.subitensTotal === 0 && (
+                <div className="mt-3 border-t border-linha pt-3">
+                  <p className="text-sm font-medium">Itens da tarefa</p>
+                  <ListaSubitens tarefaId={t.id} subitens={[]} />
+                </div>
+              )}
               <form action={excluirTarefa} className="mt-3 border-t border-linha pt-3">
                 <input type="hidden" name="id" value={t.id} />
                 <button className="text-sm text-alerta hover:underline">Excluir tarefa</button>

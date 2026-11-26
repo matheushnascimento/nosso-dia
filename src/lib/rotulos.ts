@@ -56,3 +56,12 @@ export const FAIXAS_CONVIDADOS = [
   { rotulo: "100–200", valor: 150 },
   { rotulo: "200+", valor: 250 },
 ];
+
+/** Perguntas dos grupos de escolha de pacotes (`pacotes.grupo_escolha`). */
+export const GRUPOS_ESCOLHA: Record<string, string> = {
+  cerimonia: "Como vai ser a cerimônia?",
+};
+
+export function rotuloGrupoEscolha(grupo: string): string {
+  return GRUPOS_ESCOLHA[grupo] ?? grupo;
+}

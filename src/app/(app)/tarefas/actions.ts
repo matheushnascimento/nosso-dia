@@ -105,3 +105,41 @@ export async function excluirTarefa(fd: FormData) {
   await ctx.supabase.from("tarefas").delete().eq("id", texto(fd, "id")).eq("evento_id", ctx.evento.id);
   refresh();
 }
+
+// ---------------------------------------------------------------------------
+// Subitens. O RLS (eh_membro_tarefa) garante o acesso; a action confere de novo
+// que a tarefa é do casamento antes de inserir.
+// ---------------------------------------------------------------------------
+
+export async function alternarSubitem(fd: FormData) {
+  const ctx = await requireEvento();
+  await ctx.supabase
+    .from("tarefa_subitens")
+    .update({ feito: texto(fd, "feito") === "1" })
+    .eq("id", texto(fd, "id"));
+  refresh();
+}
+
+export async function adicionarSubitem(fd: FormData) {
+  const ctx = await requireEvento();
+  const tarefaId = texto(fd, "tarefa_id");
+  const novo = texto(fd, "texto").slice(0, 200);
+  if (!novo) return;
+
+  const { data: tarefa } = await ctx.supabase
+    .from("tarefas")
+    .select("id")
+    .eq("id", tarefaId)
+    .eq("evento_id", ctx.evento.id)
+    .maybeSingle();
+  if (!tarefa) return;
+
+  await ctx.supabase.from("tarefa_subitens").insert({ tarefa_id: tarefaId, texto: novo, ordem: 1000 });
+  refresh();
+}
+
+export async function excluirSubitem(fd: FormData) {
+  const ctx = await requireEvento();
+  await ctx.supabase.from("tarefa_subitens").delete().eq("id", texto(fd, "id"));
+  refresh();
+}
