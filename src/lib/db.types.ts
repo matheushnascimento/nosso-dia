@@ -11,7 +11,21 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
+export type Json = JsonValue;
+
+export type JsonArray = JsonValue[];
+
+export type JsonObject = {
+  [x: string]: JsonValue | undefined;
+};
+
+export type JsonPrimitive = boolean | number | string | null;
+
+export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
+
 export type PapelMembro = "parceiro";
+
+export type StatusFornecedor = "contratado" | "descartado" | "orcamento_pedido" | "orcamento_recebido" | "pesquisando" | "visita";
 
 export type StatusTarefa = "concluida" | "pendente";
 
@@ -50,6 +64,24 @@ export interface Eventos {
   nome_exibicao: string;
   orcamento_total_centavos: number | null;
   uf: string | null;
+}
+
+export interface Fornecedores {
+  atualizado_em: Generated<string>;
+  categoria: string;
+  criado_em: Generated<string>;
+  detalhes: Generated<Json>;
+  email: string | null;
+  evento_id: string;
+  id: Generated<string>;
+  instagram: string | null;
+  nome: string;
+  notas: string | null;
+  site: string | null;
+  status: Generated<StatusFornecedor>;
+  telefone: string | null;
+  valor_contratado_centavos: number | null;
+  valor_orcado_centavos: number | null;
 }
 
 export interface Membros {
@@ -176,6 +208,7 @@ export interface DB {
   convites_parceiro: ConvitesParceiro;
   evento_pacotes: EventoPacotes;
   eventos: Eventos;
+  fornecedores: Fornecedores;
   membros: Membros;
   pacotes: Pacotes;
   perfis: Perfis;

@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { emConstrucao, motivoEmConstrucao } from "@/lib/env";
 
 /** Rotas que exigem login. */
-const PROTEGIDAS = ["/painel", "/tarefas", "/configuracoes", "/votos", "/onboarding"];
+const PROTEGIDAS = ["/painel", "/tarefas", "/fornecedores", "/configuracoes", "/votos", "/onboarding"];
 /** Rotas que um usuário logado não precisa ver. */
 const SO_DESLOGADO = ["/", "/entrar", "/cadastrar"];
 

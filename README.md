@@ -95,6 +95,7 @@ src/
     tipos.ts           tipos de linha usados pelas telas (Evento, Convite…)
     tarefas.ts         leitura e ordenação das tarefas e dos subitens
     pacotes.ts         checklists ativos e grupos de escolha
+    fornecedores.ts    leitura, ordenação e resumo dos fornecedores
     datas.ts           datas em America/Sao_Paulo
     formato.ts         dinheiro em centavos, parse de formulários
     rotulos.ts         categorias, grupos, UFs
@@ -112,6 +113,7 @@ src/
     (app)/tarefas/     T5 · lista agrupada, filtros, nova/editar/concluir/excluir
     (app)/configuracoes/ T6 · dados do casamento com prévia da mudança de data, convite, perfil
     (app)/votos/       votos de cada um: editor privado, salvamento automático, impressão
+    (app)/fornecedores/ lista por categoria, cadastro, detalhe com as tarefas da categoria
 ```
 
 ## Decisões que valem conhecer
@@ -130,6 +132,9 @@ src/
   copia cada conta para `auth.users`, que é o que o resto do banco usa.
 - **Votos são privados de verdade.** Só o autor lê o texto (RLS); o parceiro vê apenas a situação, pela RPC
   `status_votos`, que nunca devolve o texto. A escrita é só pela RPC `salvar_votos`.
+- **Fornecedores dos dois.** Os parceiros leem e editam todos (RLS por `eh_membro`, como as tarefas). Categorias
+  em `CATEGORIAS_FORNECEDOR` (`rotulos.ts`), conferidas também por um check no banco; "contratado" exige valor
+  contratado (check `fornecedores_contratado_com_valor`).
 - **Migrations são imutáveis depois de aplicadas.** Para mudar algo, crie uma migration nova; o `db:migrate`
   recusa rodar se uma já aplicada foi editada.
 - **Tipos gerados do banco** (`npm run db:types`): datas como `"YYYY-MM-DD"`, timestamps como texto ISO e

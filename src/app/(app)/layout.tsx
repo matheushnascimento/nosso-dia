@@ -3,7 +3,7 @@ import { Suspense, type ReactNode } from "react";
 import { sair } from "@/app/(auth)/actions";
 import { Logo } from "@/components/ui";
 import { getContexto } from "@/lib/dal";
-import { NavLinks } from "./nav-links";
+import { NavLinks, NavLinksSemDestaque } from "./nav-links";
 
 export default function LayoutApp({ children }: { children: ReactNode }) {
   return (
@@ -16,7 +16,9 @@ export default function LayoutApp({ children }: { children: ReactNode }) {
           <Suspense fallback={<span className="h-5 w-24" />}>
             <MenuUsuario />
           </Suspense>
-          <NavLinks />
+          <Suspense fallback={<NavLinksSemDestaque />}>
+            <NavLinks />
+          </Suspense>
         </div>
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6">{children}</main>

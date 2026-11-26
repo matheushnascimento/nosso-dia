@@ -65,3 +65,46 @@ export const GRUPOS_ESCOLHA: Record<string, string> = {
 export function rotuloGrupoEscolha(grupo: string): string {
   return GRUPOS_ESCOLHA[grupo] ?? grupo;
 }
+
+/**
+ * Categorias de fornecedor, na ordem de exibição. É a mesma lista do orçamento (M2 · #18) e as chaves
+ * batem com `tarefas.categoria`, para o fornecedor mostrar as tarefas da categoria dele.
+ * O banco confere a lista (check em `fornecedores.categoria`): mudou aqui, precisa de migration.
+ */
+export const CATEGORIAS_FORNECEDOR = {
+  local: "Espaço",
+  buffet: "Buffet, bolo e doces",
+  bebidas: "Bebidas",
+  foto_video: "Foto e vídeo",
+  decoracao: "Decoração e flores",
+  musica: "Música",
+  assessoria: "Assessoria",
+  cerimonia: "Celebrante e cerimônia",
+  trajes: "Trajes",
+  beleza: "Beleza",
+  aliancas: "Alianças",
+  convites: "Convites e papelaria",
+  outros: "Outros",
+} as const;
+
+export type CategoriaFornecedor = keyof typeof CATEGORIAS_FORNECEDOR;
+
+export function ehCategoriaFornecedor(c: string): c is CategoriaFornecedor {
+  return Object.hasOwn(CATEGORIAS_FORNECEDOR, c);
+}
+
+/** Situação do fornecedor, na ordem do funil. `descartado` fica fora do funil. */
+export const STATUS_FORNECEDOR = {
+  pesquisando: { rotulo: "Pesquisando", tom: "neutro" },
+  orcamento_pedido: { rotulo: "Orçamento pedido", tom: "neutro" },
+  orcamento_recebido: { rotulo: "Orçamento recebido", tom: "rose" },
+  visita: { rotulo: "Visita ou reunião", tom: "rose" },
+  contratado: { rotulo: "Contratado", tom: "salvia" },
+  descartado: { rotulo: "Descartado", tom: "alerta" },
+} as const;
+
+export type StatusFornecedor = keyof typeof STATUS_FORNECEDOR;
+
+export function ehStatusFornecedor(s: string): s is StatusFornecedor {
+  return Object.hasOwn(STATUS_FORNECEDOR, s);
+}
