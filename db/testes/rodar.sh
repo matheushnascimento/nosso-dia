@@ -64,6 +64,7 @@ conferir "$("${PSQL[@]}" -d nd_teste_c -f "$DIR/95_testes_fornecedores.sql" 2>&1
 conferir "$("${PSQL[@]}" -d nd_teste_c -f "$DIR/96_testes_orcamento.sql" 2>&1)"
 conferir "$("${PSQL[@]}" -d nd_teste_c -f "$DIR/97_testes_tags.sql" 2>&1)"
 conferir "$("${PSQL[@]}" -d nd_teste_c -f "$DIR/98_testes_estilo.sql" 2>&1)"
+conferir "$("${PSQL[@]}" -d nd_teste_c -f "$DIR/99_testes_espaco_buffet.sql" 2>&1)"
 
 echo
 if [ "$falhas" -gt 0 ]; then echo "❌ Falhas em $falhas rodada(s)."; exit 1; fi

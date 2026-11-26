@@ -4,7 +4,7 @@
  * O índice (./index.ts) é tipado por esta lista: um guia sem slug aqui, ou um slug sem guia,
  * não compila.
  */
-export const SLUGS_GUIAS = ["como-funciona-o-checklist", "documentos-de-viagem", "regime-de-bens"] as const;
+export const SLUGS_GUIAS = ["como-funciona-o-checklist", "documentos-de-viagem", "regime-de-bens", "visita-ao-espaco"] as const;
 
 export type SlugGuia = (typeof SLUGS_GUIAS)[number];
 
