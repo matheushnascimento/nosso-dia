@@ -17,6 +17,11 @@ try {
 } catch {}
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("Defina DATABASE_URL.");
+// O teste cria e apaga contas: nunca contra o Neon de produção.
+if (!["localhost", "127.0.0.1", "::1", "[::1]"].includes(new URL(url).hostname)) {
+  console.error("db:test:app só roda contra um banco local (localhost/127.0.0.1).");
+  process.exit(1);
+}
 
 const conexao = postgres(url, { max: 2, prepare: false, onnotice: () => {} });
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- teste: SQL livre

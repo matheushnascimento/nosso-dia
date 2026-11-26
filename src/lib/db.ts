@@ -31,6 +31,9 @@ function url(): string {
 
 const opcoesBase = {
   max: process.env.NODE_ENV === "production" ? 5 : 3,
+  // Na Vercel a instância fica congelada entre requisições: fecha conexões ociosas para não
+  // segurar vagas no pooler do Neon.
+  idle_timeout: 20,
   prepare: false,
   onnotice: () => {},
 } satisfies postgres.Options<Record<string, postgres.PostgresType>>;
