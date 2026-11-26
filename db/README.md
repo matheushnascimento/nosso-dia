@@ -42,6 +42,7 @@ commit;
 | `20261126000006_m1_votos.sql` | M1 #9: votos privados (`salvar_votos`, `status_votos`), tarefa por parceiro, link no kit |
 | `20261126000007_m1_civil.sql` | M1 #2: pacote `civil` (habilitação, regime de bens, pacto) |
 | `20261126000008_previa_data_opcional.sql` | `previa_mudanca_data` com `p_data default null` |
+| `20261126000009_better_auth.sql` | Tabelas `ba_*` do Better Auth (só o dono acessa) e trigger `ba_user` → `auth.users` |
 
 ## Pacotes de checklist (M1)
 
@@ -92,7 +93,7 @@ Ainda pelo `supabase-js` até a #27, quando as chamadas viram SQL no servidor (`
 
 | Tela | Chamada |
 |---|---|
-| T1 Cadastro | `supabase.auth.signUp({ email, password, options: { data: { nome } } })`. O perfil é criado por trigger |
+| T1 Cadastro | Better Auth `signUpEmail({ name, email, password })` → `ba_user` → trigger cria `auth.users` → trigger cria o perfil |
 | T2 Onboarding | `rpc('criar_evento', { p_nome_exibicao, p_data_status, p_data, ... })` → `evento_id` |
 | T3 Convite | `from('convites_parceiro').insert({ evento_id, email, convidado_por: user.id })` → `token`; e-mail enviado pelo Next (server action) com link `/convite/<token>` |
 | T3 Landing | `rpc('obter_convite', { p_token })` (funciona sem login) |

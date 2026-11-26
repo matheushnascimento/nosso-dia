@@ -1,6 +1,8 @@
 import "server-only";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { auth } from "@/lib/auth";
 import type { Tables } from "@/lib/database.types";
 import { createClient, type SupabaseServer } from "@/lib/supabase/server";
 
@@ -11,20 +13,22 @@ import { createClient, type SupabaseServer } from "@/lib/supabase/server";
  */
 
 export type Sessao = {
+  /** TEMPORÁRIO (até a #27): cliente Supabase sem sessão. As leituras de dados passam a ser SQL na #27. */
   supabase: SupabaseServer;
   userId: string;
   email: string;
 };
 
+/** Sessão do Better Auth validada no banco (não só o cookie). */
 export const getSessao = cache(async (): Promise<Sessao | null> => {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  const claims = data?.claims;
-  if (!claims?.sub) return null;
+  // `headers()` antes de `auth()`: marca a leitura como dinâmica sem criar o Better Auth no build.
+  const cabecalhos = await headers();
+  const resultado = await auth().api.getSession({ headers: cabecalhos });
+  if (!resultado) return null;
   return {
-    supabase,
-    userId: claims.sub,
-    email: typeof claims.email === "string" ? claims.email.toLowerCase() : "",
+    supabase: await createClient(),
+    userId: resultado.user.id,
+    email: resultado.user.email.toLowerCase(),
   };
 });
 

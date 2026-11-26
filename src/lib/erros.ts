@@ -13,14 +13,16 @@ const POR_HINT: Record<string, string> = {
   votos_longos: "Os votos passaram do limite de 10.000 caracteres.",
 };
 
+/** Códigos de erro do Better Auth (APIError.body.code). */
 const POR_CODIGO_AUTH: Record<string, string> = {
-  invalid_credentials: "E-mail ou senha incorretos.",
-  email_not_confirmed: "Confirme seu e-mail antes de entrar. Procure o link na sua caixa de entrada.",
-  user_already_exists: "Já existe uma conta com este e-mail.",
-  weak_password: "Senha fraca. Use pelo menos 8 caracteres, misturando letras e números.",
-  same_password: "A nova senha precisa ser diferente da atual.",
-  over_email_send_rate_limit: "Muitas tentativas. Espere alguns minutos e tente de novo.",
-  over_request_rate_limit: "Muitas tentativas. Espere alguns minutos e tente de novo.",
+  INVALID_EMAIL_OR_PASSWORD: "E-mail ou senha incorretos.",
+  INVALID_EMAIL: "Informe um e-mail válido.",
+  EMAIL_NOT_VERIFIED: "Confirme seu e-mail antes de entrar. Enviamos um novo link para a sua caixa de entrada.",
+  PASSWORD_TOO_SHORT: "A senha precisa ter pelo menos 8 caracteres.",
+  PASSWORD_TOO_LONG: "A senha é longa demais.",
+  INVALID_TOKEN: "Este link expirou ou já foi usado. Peça um novo.",
+  TOKEN_EXPIRED: "Este link expirou ou já foi usado. Peça um novo.",
+  INVALID_ORIGIN: "Não foi possível confirmar de onde veio o pedido. Recarregue a página e tente de novo.",
 };
 
 type ErroSupabase = { message?: string; hint?: string | null; code?: string | null } | null;
@@ -28,7 +30,6 @@ type ErroSupabase = { message?: string; hint?: string | null; code?: string | nu
 export function mensagemDeErro(erro: ErroSupabase, padrao = "Algo deu errado. Tente de novo."): string {
   if (!erro) return padrao;
   if (erro.hint && POR_HINT[erro.hint]) return POR_HINT[erro.hint];
-  if (erro.code && POR_CODIGO_AUTH[erro.code]) return POR_CODIGO_AUTH[erro.code];
   if (erro.code === "23505") return "Já existe um registro igual.";
   if (erro.code === "42501") return "Você não tem permissão para isso.";
   return padrao;
@@ -44,4 +45,16 @@ export function destinoSeguro(next: string | null | undefined, padrao = "/painel
     return padrao;
   }
   return next;
+}
+
+/** Erros do Better Auth (lançados como APIError pelas chamadas `auth().api.*`). */
+export function mensagemDeErroAuth(e: unknown, padrao = "Algo deu errado. Tente de novo."): string {
+  const erro = e as { status?: string | number; statusCode?: number; body?: { code?: string } } | null;
+  if (erro?.status === "TOO_MANY_REQUESTS" || erro?.statusCode === 429) {
+    return "Muitas tentativas. Espere alguns minutos e tente de novo.";
+  }
+  const codigo = erro?.body?.code;
+  if (codigo && POR_CODIGO_AUTH[codigo]) return POR_CODIGO_AUTH[codigo];
+  console.error("[nosso-dia] erro de autenticação:", e);
+  return padrao;
 }
