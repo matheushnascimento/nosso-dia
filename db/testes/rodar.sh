@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Roda os testes SQL num Postgres comum (sem Docker/Supabase), usando um stub do schema `auth`.
+# Roda os testes SQL num Postgres comum. Cada banco começa pela migration base (papéis e schema `auth`).
 # Conexão pelas variáveis padrão do psql (PGHOST, PGPORT, PGUSER…). Precisa poder criar bancos.
 #
-#   supabase/testes/rodar.sh
+#   db/testes/rodar.sh
 #
 # Rodada A: todas as migrations → testes do M0 (regressão)
 # Rodada B: M0 → dados "antigos" → infra do M1 → testes da infra (backfill, pacotes, subitens, RLS)
@@ -11,12 +11,13 @@ set -euo pipefail
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 MIG="$DIR/../migrations"
+BASE="$MIG/20261124000000_base.sql"
 PSQL=(psql -X -q -v ON_ERROR_STOP=1)
 falhas=0
 
 novo_banco() {
   "${PSQL[@]}" -d postgres -c "drop database if exists $1" -c "create database $1" 2> /dev/null
-  "${PSQL[@]}" -d "$1" -f "$DIR/00_stub_supabase.sql"
+  "${PSQL[@]}" -d "$1" -f "$BASE" > /dev/null
 }
 
 aplicar() { # banco, padrão de arquivos
@@ -32,7 +33,7 @@ conferir() { # saída de um arquivo de testes
 
 echo "== Rodada A: M0 + M1 → testes do M0"
 novo_banco nd_teste_a
-aplicar nd_teste_a "$MIG"/*.sql
+for f in "$MIG"/*.sql; do [ "$f" = "$BASE" ] || aplicar nd_teste_a "$f"; done
 conferir "$("${PSQL[@]}" -d nd_teste_a -f "$DIR/10_testes.sql" 2>&1)"
 
 echo
@@ -50,7 +51,7 @@ novo_banco nd_teste_c
 aplicar nd_teste_c "$MIG"/202611250000*.sql
 aplicar nd_teste_c "$DIR/15_dados_pre_m1.sql"
 for f in "$MIG"/*.sql; do
-  case "$(basename "$f")" in 202611250000*) ;; *) aplicar nd_teste_c "$f" ;; esac
+  case "$(basename "$f")" in 20261124000000_base.sql | 202611250000*) ;; *) aplicar nd_teste_c "$f" ;; esac
 done
 conferir "$("${PSQL[@]}" -d nd_teste_c -f "$DIR/30_testes_cerimonia.sql" 2>&1)"
 conferir "$("${PSQL[@]}" -d nd_teste_c -f "$DIR/40_testes_aliancas_lua_de_mel_kit.sql" 2>&1)"

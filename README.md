@@ -4,31 +4,31 @@ Planejamento de casamento para os dois, num só lugar. Este repositório contém
 conta do casal, onboarding, convite do parceiro, painel e um checklist cujos prazos se ajustam
 sozinhos à data do casamento.
 
-**Stack:** Next.js 16 (App Router, Cache Components, Server Actions) · Supabase (Postgres + Auth + RLS) · Tailwind CSS 4.
+**Stack:** Next.js 16 (App Router, Cache Components, Server Actions) · Postgres com RLS (Neon em produção) · Tailwind CSS 4.
+
+> **Migração em andamento** (milestone "Migração · Neon + Better Auth"): o banco já roda em Postgres puro
+> (`db/`), mas o login e a leitura dos dados ainda passam pelo Supabase até as issues #26 e #27.
 
 ## Rodando localmente
 
-Pré-requisitos: Node 20+, Docker (para o Supabase local).
+Pré-requisitos: Node 20+ e Docker.
 
 ```bash
 npm install
-npm run db:start        # sobe o Supabase local (Docker) e aplica as migrations
-cp .env.example .env.local   # preencha com a URL e a chave de `npx supabase status`
-npm run db:types        # regenera src/lib/database.types.ts a partir do banco
+cp .env.example .env.local   # DATABASE_URL já aponta para o Postgres local
+npm run db:start             # Postgres 17 em Docker (porta 54320)
+npm run db:migrate           # aplica as migrations de db/migrations
+npm run db:test              # testes SQL do banco
 npm run dev
 ```
 
-A configuração do Supabase local está em `supabase/config.toml` (não rode `supabase init`).
-Os e-mails de confirmação e de nova senha caem no Mailpit (`npx supabase status` mostra a URL), e a
-confirmação de e-mail vem desligada para desenvolvimento.
+Enquanto a migração não termina, o login e as telas ainda usam o Supabase local (`npx supabase start` e as
+variáveis `NEXT_PUBLIC_SUPABASE_*` do `.env.local`).
 
 Abrindo o `npm run dev` **de outro computador** (pelo IP ou nome da máquina)? Ponha esse endereço em
 `DEV_ORIGINS` no `.env.local` (ex.: `DEV_ORIGINS=192.168.0.10`) e em `NEXT_PUBLIC_SITE_URL`. Sem isso, o
 servidor de desenvolvimento bloqueia os próprios scripts: a página carrega, mas botões como o
 "Continuar" do onboarding não respondem.
-Para os links dos e-mails (nova senha, confirmação) também funcionarem de lá, troque em
-`supabase/config.toml` o `external_url` (ex.: `http://homeserver:54321`) e o `site_url`
-(ex.: `http://homeserver:3000`) e reinicie com `npx supabase stop && npx supabase start`.
 
 ### Scripts
 
@@ -38,8 +38,10 @@ Para os links dos e-mails (nova senha, confirmação) também funcionarem de lá
 | `npm run build` | Build de produção (exige as variáveis de `.env.example`) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | Gera tipos de rota e roda `tsc` |
-| `npm run db:start` / `db:reset` | Supabase local / reaplica todas as migrations |
-| `npm run db:types` | Regenera os tipos do banco |
+| `npm run db:start` / `db:stop` | Sobe / para o Postgres local (Docker) |
+| `npm run db:migrate` / `db:status` | Aplica as migrations pendentes / mostra a situação |
+| `npm run db:reset` | Apaga e recria o banco **local** com todas as migrations |
+| `npm run db:test` | Testes SQL do banco (dentro do contêiner) |
 
 ## Deploy e página "em construção"
 
@@ -54,7 +56,7 @@ Para lançar o app num projeto da Vercel que está mostrando o placeholder:
 ## Estrutura
 
 ```text
-supabase/
+db/
   migrations/          schema, regras (RPCs, triggers, view), RLS, catálogo de tarefas
   testes/              testes SQL dos critérios de aceite (rodam num Postgres comum)
 src/
@@ -95,13 +97,14 @@ src/
 - **Server Actions sempre reautenticam** pela DAL e filtram por `evento_id`, além do RLS.
 - **Votos são privados de verdade.** Só o autor lê o texto (RLS); o parceiro vê apenas a situação, pela RPC
   `status_votos`, que nunca devolve o texto. A escrita é só pela RPC `salvar_votos`.
-- **`database.types.ts` é gerado do banco.** Depois de criar ou mudar uma migration, rode
-  `npx supabase migration up` e `npm run db:types` e faça commit do arquivo junto com a migration.
+- **Migrations são imutáveis depois de aplicadas.** Para mudar algo, crie uma migration nova; o `db:migrate`
+  recusa rodar se uma já aplicada foi editada.
+- **`database.types.ts`** ainda é o gerado pelo Supabase; na #27 ele dá lugar aos tipos gerados do Postgres.
 
 ## Testes do banco sem Docker
 
 ```bash
-PGHOST=localhost PGUSER=postgres supabase/testes/rodar.sh
+npm run db:test   # ou: PGHOST=localhost PGUSER=postgres db/testes/rodar.sh
 ```
 
-Detalhes do contrato entre telas e banco: [`supabase/README.md`](supabase/README.md).
+Detalhes do contrato entre telas e banco: [`db/README.md`](db/README.md).

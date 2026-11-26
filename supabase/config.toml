@@ -1,3 +1,6 @@
+# TEMPORÁRIO: Supabase local, ainda usado pelo login e pelas telas até a migração terminar
+# (milestone "Migração · Neon + Better Auth", sai na #27). As migrations agora ficam em db/migrations.
+#
 # Configuração do Supabase local (`npx supabase start`).
 # Só o que difere do padrão da CLI; o resto vem dos valores padrão.
 # Mantenha o project_id: é ele que liga este arquivo aos contêineres e ao volume do banco.

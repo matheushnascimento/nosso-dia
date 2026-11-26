@@ -1,0 +1,24 @@
+# Postgres local para desenvolvimento (npm run db:start).
+# Mesma versão principal do Neon. A porta 54320 evita conflito com outro Postgres
+# (ou com o Supabase local, que usa a 54322).
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nosso_dia
+    ports:
+      - "127.0.0.1:54320:5432"
+    volumes:
+      - dados:/var/lib/postgresql/data
+      # testes SQL rodam dentro do contêiner (npm run db:test), sem precisar de psql na máquina
+      - ./db:/nosso-dia/db:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d nosso_dia"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  dados:
