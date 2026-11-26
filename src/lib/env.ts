@@ -2,24 +2,13 @@
  * Variáveis de ambiente.
  *
  * Nada aqui pode lançar erro no carregamento do módulo: o `next build` avalia os módulos
- * das rotas para coletar configuração, e o build tem que passar mesmo sem Supabase
+ * das rotas para coletar configuração, e o build tem que passar mesmo sem banco
  * configurado (CI, primeiro deploy). A validação acontece só quando o valor é usado.
  */
 
-// Acesso literal a process.env.NEXT_PUBLIC_* para o Next embutir no bundle do cliente.
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-// O nome antigo (anon key) também é aceito: muitos tutoriais do Supabase ainda usam ele.
-const chave =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-/** O Supabase está configurado neste ambiente? */
-export function supabaseConfigurado(): boolean {
-  return Boolean(url && chave);
-}
-
 /**
  * Página "em construção" no lugar do app inteiro.
- * Ligada com EM_CONSTRUCAO=1 ou, por segurança, sempre que o Supabase não estiver configurado.
+ * Ligada com EM_CONSTRUCAO=1 ou, por segurança, sempre que o banco ou o login não estiverem configurados.
  */
 export function emConstrucao(): boolean {
   return motivoEmConstrucao() !== null;
@@ -31,21 +20,9 @@ export function motivoEmConstrucao(): string | null {
   const faltando = [
     !process.env.DATABASE_URL && "DATABASE_URL",
     !process.env.BETTER_AUTH_SECRET && "BETTER_AUTH_SECRET",
-    // TEMPORÁRIO (até a #27): as telas ainda leem os dados pelo Supabase.
-    !url && "NEXT_PUBLIC_SUPABASE_URL",
-    !chave && "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   ].filter(Boolean);
   if (faltando.length) return `faltam ${faltando.join(" e ")} (confira o .env.local e reinicie o servidor).`;
   return null;
-}
-
-export function supabaseEnv(): { url: string; chave: string } {
-  if (!url || !chave) {
-    throw new Error(
-      "NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY não definidas. Veja .env.example.",
-    );
-  }
-  return { url, chave };
 }
 
 /** URL pública do app, usada em links de e-mail (confirmação, recuperação, convite). */

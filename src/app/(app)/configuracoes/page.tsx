@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { EscolhaPacote } from "@/components/escolha-pacote";
 import { Cartao, Esqueleto, Subtitulo, Titulo } from "@/components/ui";
-import { getMembros, requireEvento } from "@/lib/dal";
+import { consultar, getMembros, requireEvento } from "@/lib/dal";
 import { dataCurta, hojeSP } from "@/lib/datas";
 import { SITE_URL } from "@/lib/env";
 import { listarPacotes } from "@/lib/pacotes";
@@ -29,16 +29,18 @@ async function Conteudo() {
   const [membros, pacotes] = await Promise.all([getMembros(ctx), listarPacotes(ctx)]);
   const hoje = hojeSP();
 
-  const { data: convite } =
+  const convite =
     membros.length < 2
-      ? await ctx.supabase
-          .from("convites_parceiro")
-          .select("id, email, token, expira_em")
-          .eq("evento_id", ctx.evento.id)
-          .is("aceito_em", null)
-          .is("cancelado_em", null)
-          .maybeSingle()
-      : { data: null };
+      ? await consultar(ctx, (trx) =>
+          trx
+            .selectFrom("convites_parceiro")
+            .select(["id", "email", "token", "expira_em"])
+            .where("evento_id", "=", ctx.evento.id)
+            .where("aceito_em", "is", null)
+            .where("cancelado_em", "is", null)
+            .executeTakeFirst(),
+        )
+      : undefined;
   const conviteExpirado = convite ? new Date(convite.expira_em) < new Date() : false;
 
   return (

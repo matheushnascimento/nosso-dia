@@ -1,39 +1,80 @@
 import "server-only";
-import { Kysely } from "kysely";
+import { Kysely, type Transaction } from "kysely";
 import { PostgresJSDialect } from "kysely-postgres-js";
 import postgres from "postgres";
+import type { DB } from "@/lib/db.types";
+import { comoUsuario, comoVisitante, type Identidade } from "@/lib/rls";
 
 /**
- * Conexão com o Postgres (Neon em produção, Docker no desenvolvimento).
+ * Conexões com o Postgres (Neon em produção, Docker no desenvolvimento).
  *
- * Criada só no primeiro uso: o `next build` importa os módulos das rotas e precisa passar
- * sem DATABASE_URL. Uma instância por processo (o `globalThis` evita abrir um pool novo a
- * cada recarga do `next dev`).
+ * São duas, com o mesmo banco:
+ *  - a do **app**, que devolve datas como "YYYY-MM-DD", timestamps como texto ISO e bigint como
+ *    número (o que as telas sempre usaram);
+ *  - a do **Better Auth**, com os tipos padrão do driver (ele compara datas como `Date`).
  *
+ * Criadas só no primeiro uso: o `next build` importa os módulos das rotas sem DATABASE_URL.
  * `prepare: false` porque, no Neon, a conexão passa pelo pooler (PgBouncer em modo transação).
+ *
+ * O app NÃO acessa o banco direto: só por `comoUsuario` / `comoVisitante` (src/lib/rls.ts),
+ * que aplicam o papel e a identidade da requisição. Assim o RLS vale sempre.
  */
-const global = globalThis as unknown as { conexaoNossoDia?: postgres.Sql };
+type Conexoes = { app?: postgres.Sql; auth?: postgres.Sql; kysely?: Kysely<DB> };
+const global = globalThis as unknown as { conexoesNossoDia?: Conexoes };
+const conexoes = (global.conexoesNossoDia ??= {});
 
-export function conexao(): postgres.Sql {
-  if (!global.conexaoNossoDia) {
-    const url = process.env.DATABASE_URL;
-    if (!url) throw new Error("DATABASE_URL não definida. Veja .env.example.");
-    global.conexaoNossoDia = postgres(url, {
-      max: process.env.NODE_ENV === "production" ? 5 : 3,
-      prepare: false,
-      onnotice: () => {},
-    });
-  }
-  return global.conexaoNossoDia;
+function url(): string {
+  const u = process.env.DATABASE_URL;
+  if (!u) throw new Error("DATABASE_URL não definida. Veja .env.example.");
+  return u;
 }
 
-/** Dialeto do Kysely sobre a mesma conexão (usado pelo Better Auth e, na #27, pelas consultas do app). */
-export function dialeto() {
-  // função, e não a conexão: assim ela só é criada na primeira consulta
-  return new PostgresJSDialect({ postgres: () => conexao() });
+const opcoesBase = {
+  max: process.env.NODE_ENV === "production" ? 5 : 3,
+  prepare: false,
+  onnotice: () => {},
+} satisfies postgres.Options<Record<string, postgres.PostgresType>>;
+
+/** "2026-11-26 01:09:20.99+00" → "2026-11-26T01:09:20.990Z" */
+const paraISO = (x: string) => new Date(x.replace(" ", "T").replace(/([+-]\d\d)$/, "$1:00")).toISOString();
+
+function conexaoApp(): postgres.Sql {
+  return (conexoes.app ??= postgres(url(), {
+    ...opcoesBase,
+    types: {
+      data: { to: 1082, from: [1082], serialize: (x: string) => x, parse: (x: string) => x },
+      timestamptz: {
+        to: 1184,
+        from: [1184, 1114],
+        serialize: (x: string | Date) => (x instanceof Date ? x.toISOString() : x),
+        parse: paraISO,
+      },
+      int8: { to: 20, from: [20], serialize: (x: number) => String(x), parse: (x: string) => Number(x) },
+    },
+  }));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- tipos do banco chegam na #27
-export function kysely(): Kysely<any> {
-  return new Kysely({ dialect: dialeto() });
+function conexaoAuth(): postgres.Sql {
+  return (conexoes.auth ??= postgres(url(), opcoesBase));
+}
+
+/** Dialeto para o Better Auth (função: a conexão só nasce na primeira consulta). */
+export function dialetoAuth() {
+  return new PostgresJSDialect({ postgres: () => conexaoAuth() });
+}
+
+function banco(): Kysely<DB> {
+  return (conexoes.kysely ??= new Kysely<DB>({ dialect: new PostgresJSDialect({ postgres: () => conexaoApp() }) }));
+}
+
+export type Trx = Transaction<DB>;
+
+/** Roda `fn` como o usuário logado (papel `authenticated`, RLS e `auth.uid()` valendo). */
+export function noBanco<T>(quem: Identidade, fn: (trx: Trx) => Promise<T>): Promise<T> {
+  return comoUsuario(banco(), quem, fn);
+}
+
+/** Roda `fn` como visitante sem login (papel `anon`). */
+export function noBancoVisitante<T>(fn: (trx: Trx) => Promise<T>): Promise<T> {
+  return comoVisitante(banco(), fn);
 }

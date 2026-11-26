@@ -13,7 +13,7 @@ aplicadas em ordem por `scripts/db.mjs`, que registra cada uma em `migracoes.apl
   `auth.jwt()`, que leem `request.jwt.claim.sub` e `request.jwt.claims`;
 - as mesmas permissões padrão que o Supabase dava em `public`, para o RLS das migrations seguintes valer igual.
 
-**Como o app usa (a partir da #27):** cada requisição abre uma transação, troca para o papel `authenticated` e
+**Como o app usa** (`src/lib/rls.ts`): cada consulta abre uma transação, troca para o papel `authenticated` e
 define a identidade, tudo com escopo da transação:
 
 ```sql
@@ -88,20 +88,21 @@ aplicada: crie outra. O script recusa rodar se o hash de uma aplicada mudou.
 
 ### Contrato com o front (Next.js)
 
-Ainda pelo `supabase-js` até a #27, quando as chamadas viram SQL no servidor (`select * from criar_evento(...)` etc.).
+Tudo por SQL no servidor (Kysely), dentro de `consultar(sessao, ...)`. Funções do banco são chamadas com
+`select * from funcao(...)`.
 
 
 | Tela | Chamada |
 |---|---|
 | T1 Cadastro | Better Auth `signUpEmail({ name, email, password })` → `ba_user` → trigger cria `auth.users` → trigger cria o perfil |
-| T2 Onboarding | `rpc('criar_evento', { p_nome_exibicao, p_data_status, p_data, ... })` → `evento_id` |
-| T3 Convite | `from('convites_parceiro').insert({ evento_id, email, convidado_por: user.id })` → `token`; e-mail enviado pelo Next (server action) com link `/convite/<token>` |
-| T3 Landing | `rpc('obter_convite', { p_token })` (funciona sem login) |
-| T3 Aceitar | `rpc('aceitar_convite', { p_token })`. Exige e-mail da conta = e-mail convidado |
-| T4/T5 Painel e Tarefas | `from('tarefas_com_prazo').select()`, com colunas `prazo_efetivo`, `grupo`, `prazo_travado`, `prazo_aproximado` |
+| T2 Onboarding | `select criar_evento(p_nome_exibicao => ..., p_data_status => ..., ...)` → `evento_id` |
+| T3 Convite | `insert into convites_parceiro (evento_id, email, convidado_por) ... returning token`; e-mail enviado pelo Next (server action) com link `/convite/<token>` |
+| T3 Landing | `select * from obter_convite(token)` como visitante (`noBancoVisitante`) |
+| T3 Aceitar | `select aceitar_convite(token)`. Exige e-mail da conta = e-mail convidado |
+| T4/T5 Painel e Tarefas | `select * from tarefas_com_prazo`, com colunas `prazo_efetivo`, `grupo`, `prazo_travado`, `prazo_aproximado` |
 | T5 Ações | `update` em `tarefas` (`status`, `responsavel`, `prazo_fixo`...); conclusão carimbada por trigger |
-| T6 Mudar data | `rpc('previa_mudanca_data', ...)` → confirmar → `update` em `eventos` |
-| T6 Checklists | `rpc('ativar_pacote', { p_evento_id, p_pacote })` → `{ criadas, removidas }`; `rpc('desativar_pacote', ...)` |
+| T6 Mudar data | `select * from previa_mudanca_data(...)` → confirmar → `update` em `eventos` |
+| T6 Checklists | `select * from ativar_pacote(evento, pacote)` → `criadas, removidas`; `select desativar_pacote(...)` |
 | T5 Itens | `tarefa_subitens` (select/insert/update `feito`/delete); contagem em `tarefas_com_prazo.subitens_total/feitos` |
 
 Erros de regra de negócio vêm com `hint`: `ja_tem_evento`, `limite_parceiros`, `convite_invalido`, `email_diferente`,
