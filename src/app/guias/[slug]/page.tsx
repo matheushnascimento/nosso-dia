@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { Logo } from "@/components/ui";
 import { listarGuias, obterGuia } from "@/conteudo/guias";
+import { ConteudoDoGuia, EsqueletoDoGuia } from "./conteudo-do-guia";
 
 export function generateStaticParams() {
   return listarGuias().map((g) => ({ slug: g.slug }));
@@ -13,11 +14,9 @@ export async function generateMetadata({ params }: PageProps<"/guias/[slug]">): 
   return guia ? { title: guia.titulo, description: guia.resumo } : {};
 }
 
-export default async function PaginaGuia({ params }: PageProps<"/guias/[slug]">) {
-  const guia = obterGuia((await params).slug);
-  if (!guia) notFound();
-  const { Conteudo } = guia;
-
+// O casco (logo e link de voltar) não depende da URL e fica fora do <Suspense>; a leitura de
+// `params` e o conteúdo do guia ficam no filho, para a navegação mostrar o casco na hora.
+export default function PaginaGuia({ params }: PageProps<"/guias/[slug]">) {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-8 sm:px-6">
       <header className="mb-10 flex items-center justify-between">
@@ -29,22 +28,9 @@ export default async function PaginaGuia({ params }: PageProps<"/guias/[slug]">)
         </Link>
       </header>
 
-      <article>
-        <p className="mb-3 text-sm uppercase tracking-[0.2em] text-rose">Guia</p>
-        <h1 className="font-serif text-4xl font-medium leading-tight sm:text-5xl">{guia.titulo}</h1>
-        <p className="mt-3 text-lg text-tinta-suave">{guia.resumo}</p>
-
-        {guia.informativo && (
-          <p role="note" className="mt-6 rounded-xl bg-rose-claro px-4 py-3 text-sm">
-            {guia.aviso ??
-              "Conteúdo informativo. Exigências e prazos podem variar; confirme com o órgão ou profissional responsável na sua cidade."}
-          </p>
-        )}
-
-        <div className="mt-8 space-y-4 leading-relaxed [&_h2]:mt-10 [&_h2]:font-serif [&_h2]:text-2xl [&_h2]:font-medium [&_li]:ml-5 [&_li]:list-disc [&_ul]:space-y-1 [&_a]:underline [&_a]:decoration-rose/50 [&_a]:underline-offset-4 [&_a:hover]:decoration-rose">
-          <Conteudo />
-        </div>
-      </article>
+      <Suspense fallback={<EsqueletoDoGuia />}>
+        <ConteudoDoGuia params={params} />
+      </Suspense>
     </div>
   );
 }

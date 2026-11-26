@@ -1,5 +1,6 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
+import { ehSlugDeGuia } from "@/conteudo/guias/slugs";
 import { auth } from "@/lib/auth";
 import { emConstrucao, motivoEmConstrucao } from "@/lib/env";
 
@@ -33,6 +34,16 @@ export async function proxy(request: NextRequest) {
     return r;
   }
 
+  // Guia inexistente: 404 de verdade. O conteúdo do guia fica dentro de <Suspense> (para a navegação
+  // mostrar o casco na hora), e lá o notFound() só roda depois que a resposta já começou com 200.
+  // Reescrever para uma rota que não existe (pastas com "_" nunca viram rota) dá a página 404 padrão.
+  const guia = /^\/guias\/([^/]+)\/?$/.exec(request.nextUrl.pathname);
+  if (guia && !ehSlugDeGuia(decodificar(guia[1]))) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/_guia-nao-encontrado";
+    return NextResponse.rewrite(url);
+  }
+
   const path = request.nextUrl.pathname;
   const temCookie = Boolean(getSessionCookie(request, { cookiePrefix: "nosso-dia" }));
 
@@ -55,6 +66,15 @@ export async function proxy(request: NextRequest) {
   }
 
   return NextResponse.next();
+}
+
+/** decodeURIComponent que não lança com URL malformada (ex.: "%E0"). */
+function decodificar(segmento: string) {
+  try {
+    return decodeURIComponent(segmento);
+  } catch {
+    return segmento;
+  }
 }
 
 let avisado = false;
