@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Aviso, Cartao, Esqueleto, Selo, Titulo, cx } from "@/components/ui";
+import { detalhesParaForm, resumoDetalhes } from "@/lib/campos-fornecedor";
 import { requireEvento } from "@/lib/dal";
 import { dataCurta, hojeSP } from "@/lib/datas";
 import { obterFornecedor, type Fornecedor } from "@/lib/fornecedores";
@@ -52,6 +53,7 @@ async function Conteudo({
           <Selo tom={STATUS_FORNECEDOR[f.status].tom}>{STATUS_FORNECEDOR[f.status].rotulo}</Selo>
         </div>
         <Contatos f={f} />
+        <ResumoDetalhes f={f} />
       </div>
 
       {sp.novo === "1" && <Aviso tipo="ok">Fornecedor cadastrado.</Aviso>}
@@ -60,6 +62,7 @@ async function Conteudo({
         <Cartao>
           <FormFornecedor
             id={f.id}
+            detalhes={detalhesParaForm(f.categoria, f.detalhes)}
             valores={{
               nome: f.nome,
               categoria: f.categoria,
@@ -107,6 +110,21 @@ function Contatos({ f }: { f: Fornecedor }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+function ResumoDetalhes({ f }: { f: Fornecedor }) {
+  const itens = resumoDetalhes(f.categoria, f.detalhes);
+  if (!itens.length) return null;
+  return (
+    <dl className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+      {itens.map((i) => (
+        <div key={i.rotulo} className="flex gap-1.5">
+          <dt className="text-tinta-suave">{i.rotulo}:</dt>
+          <dd>{i.texto}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
