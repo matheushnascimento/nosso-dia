@@ -43,11 +43,18 @@ commit;
 | `20261126000007_m1_civil.sql` | M1 #2: pacote `civil` (habilitação, regime de bens, pacto) |
 | `20261126000008_previa_data_opcional.sql` | `previa_mudanca_data` com `p_data default null` |
 | `20261126000009_better_auth.sql` | Tabelas `ba_*` do Better Auth (só o dono acessa) e trigger `ba_user` → `auth.users` |
+| `20261127000001_m2_fornecedores.sql` | M2 #17: `fornecedores` (funil, valores em centavos, `detalhes` jsonb), RLS dos membros |
+| `20261127000002_m2_orcamento.sql` | M2 #18: `orcamento_categorias` (planejado e prioridade por categoria) |
+| `20261127000003_m2_pacotes_por_tag.sql` | M2 #20: catálogo `tags`, `pacotes.tag`, `evento_tags`, `previa_tags`, `definir_tags` |
 
 ## Pacotes de checklist (M1)
 
 - **Pacote** = conjunto de `tarefa_modelos`. `automatico = true` entra em todo casamento; com
-  `grupo_escolha` o casal escolhe um por grupo (ativar um desativa os outros do grupo).
+  `grupo_escolha` o casal escolhe um por grupo (ativar um desativa os outros do grupo); com `tag` (M2) entra
+  quando o casamento tem a tag (catálogo em `tags`, tags do casamento em `evento_tags`). As três formas são
+  exclusivas. Pacote por tag só muda por `definir_tags`; `ativar_pacote`/`desativar_pacote` recusam
+  (`hint pacote_por_tag`). Conteúdo novo de um pacote por tag chega aos casamentos com
+  `select public._aplicar_pacote_por_tag('<pacote>')`.
 - **Subitens**: `tarefa_modelo_subitens` são copiados para `tarefa_subitens` quando o pacote é ativado.
 - **Guia**: `tarefa_modelos.guia` é o slug de um guia estático em `src/conteudo/guias/`.
 - **`substitui`**: códigos de modelos antigos que o novo absorve. A tarefa existente é reaproveitada,
@@ -103,10 +110,11 @@ Tudo por SQL no servidor (Kysely), dentro de `consultar(sessao, ...)`. Funções
 | T5 Ações | `update` em `tarefas` (`status`, `responsavel`, `prazo_fixo`...); conclusão carimbada por trigger |
 | T6 Mudar data | `select * from previa_mudanca_data(...)` → confirmar → `update` em `eventos` |
 | T6 Checklists | `select * from ativar_pacote(evento, pacote)` → `criadas, removidas`; `select desativar_pacote(...)` |
+| Tags (M2) | `select * from previa_tags(evento, tags[])` → `entram, saem, ficam`; confirmar → `select * from definir_tags(evento, tags[])` → `criadas, removidas` (o casamento passa a ter exatamente essas tags) |
 | T5 Itens | `tarefa_subitens` (select/insert/update `feito`/delete); contagem em `tarefas_com_prazo.subitens_total/feitos` |
 
 Erros de regra de negócio vêm com `hint`: `ja_tem_evento`, `limite_parceiros`, `convite_invalido`, `email_diferente`,
-`pacote_automatico`, `pacote_inexistente`.
+`pacote_automatico`, `pacote_inexistente`, `pacote_por_tag`, `tag_inexistente`.
 
 ### Testes do banco
 
