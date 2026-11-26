@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { consultar, requireEvento } from "@/lib/dal";
+import { detalhesDigitados, lerDetalhes, type Detalhes, type ValoresDetalhes } from "@/lib/campos-fornecedor";
 import { mensagemDeErro, type EstadoForm } from "@/lib/erros";
 import { parseBRL, texto } from "@/lib/formato";
 import { ehCategoriaFornecedor, ehStatusFornecedor, type CategoriaFornecedor, type StatusFornecedor } from "@/lib/rotulos";
@@ -11,6 +12,9 @@ import { ehCategoriaFornecedor, ehStatusFornecedor, type CategoriaFornecedor, ty
  * Toda action reautentica pela DAL, roda como o usuário (RLS valendo) e filtra por evento_id.
  * As regras (categoria da lista, contratado com valor) são conferidas aqui e de novo no banco.
  */
+
+/** Estado do formulário: num erro, devolve também os campos da categoria como foram digitados. */
+export type EstadoFornecedor = EstadoForm & { detalhes?: ValoresDetalhes };
 
 type Campos = {
   categoria: CategoriaFornecedor;
@@ -23,6 +27,7 @@ type Campos = {
   valor_orcado_centavos: number | null;
   valor_contratado_centavos: number | null;
   notas: string | null;
+  detalhes: Detalhes;
 };
 
 const LIMITE_VALOR = 100_000_000_000; // R$ 1 bilhão, o mesmo check do banco
@@ -88,6 +93,10 @@ function lerCampos(fd: FormData): Campos | { erro: string } {
   const notas = texto(fd, "notas");
   if (notas.length > 5000) return { erro: "As notas passaram de 5.000 caracteres." };
 
+  // Só os campos da categoria escolhida: trocar de categoria descarta os da anterior.
+  const lidos = lerDetalhes(categoria, fd);
+  if ("erro" in lidos) return { erro: lidos.erro };
+
   return {
     categoria,
     nome,
@@ -99,19 +108,24 @@ function lerCampos(fd: FormData): Campos | { erro: string } {
     valor_orcado_centavos: orcado,
     valor_contratado_centavos: contratado,
     notas: notas || null,
+    detalhes: lidos.detalhes,
   };
 }
 
 /** Devolve o que a pessoa digitou, para o formulário não perder tudo num erro. */
-function camposDigitados(fd: FormData): Record<string, string> {
+function comDigitados(fd: FormData, erro: string): EstadoFornecedor {
   const nomes = ["nome", "categoria", "status", "telefone", "email", "instagram", "site", "valor_orcado", "valor_contratado", "notas"];
-  return Object.fromEntries(nomes.map((n) => [n, texto(fd, n)]));
+  return {
+    erro,
+    campos: Object.fromEntries(nomes.map((n) => [n, texto(fd, n)])),
+    detalhes: detalhesDigitados(texto(fd, "categoria"), fd),
+  };
 }
 
-export async function criarFornecedor(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
+export async function criarFornecedor(_: EstadoFornecedor, fd: FormData): Promise<EstadoFornecedor> {
   const ctx = await requireEvento();
   const campos = lerCampos(fd);
-  if ("erro" in campos) return { erro: campos.erro, campos: camposDigitados(fd) };
+  if ("erro" in campos) return comDigitados(fd, campos.erro);
 
   let id: string;
   try {
@@ -124,16 +138,16 @@ export async function criarFornecedor(_: EstadoForm, fd: FormData): Promise<Esta
     );
     id = novo.id;
   } catch (e) {
-    return { erro: mensagemDeErro(e, "Não foi possível cadastrar o fornecedor."), campos: camposDigitados(fd) };
+    return comDigitados(fd, mensagemDeErro(e, "Não foi possível cadastrar o fornecedor."));
   }
   redirect(`/fornecedores/${id}?novo=1`);
 }
 
-export async function editarFornecedor(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
+export async function editarFornecedor(_: EstadoFornecedor, fd: FormData): Promise<EstadoFornecedor> {
   const ctx = await requireEvento();
   const id = texto(fd, "id");
   const campos = lerCampos(fd);
-  if ("erro" in campos) return { erro: campos.erro, campos: camposDigitados(fd) };
+  if ("erro" in campos) return comDigitados(fd, campos.erro);
 
   try {
     const r = await consultar(ctx, (trx) =>
@@ -146,7 +160,7 @@ export async function editarFornecedor(_: EstadoForm, fd: FormData): Promise<Est
     );
     if (!r.numUpdatedRows) return { erro: "Fornecedor não encontrado." };
   } catch (e) {
-    return { erro: mensagemDeErro(e, "Não foi possível salvar."), campos: camposDigitados(fd) };
+    return comDigitados(fd, mensagemDeErro(e, "Não foi possível salvar."));
   }
   refresh();
   return { ok: "Salvo." };

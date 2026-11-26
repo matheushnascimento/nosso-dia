@@ -101,6 +101,7 @@ src/
     tarefas.ts         leitura e ordenação das tarefas e dos subitens
     pacotes.ts         checklists ativos e grupos de escolha
     fornecedores.ts    leitura, ordenação e resumo dos fornecedores
+    campos-fornecedor/ campos próprios de cada categoria (um módulo por categoria), validação e resumo
     orcamento.ts       categorias do orçamento, distribuição sugerida e prioridades (puro, com testes)
     orcamento-dados.ts planejado × contratado × restante por categoria
     datas.ts           datas em America/Sao_Paulo
@@ -143,6 +144,9 @@ src/
 - **Fornecedores dos dois.** Os parceiros leem e editam todos (RLS por `eh_membro`, como as tarefas). Categorias
   em `CATEGORIAS_FORNECEDOR` (`rotulos.ts`), conferidas também por um check no banco; "contratado" exige valor
   contratado (check `fornecedores_contratado_com_valor`).
+- **Campos por categoria em código.** Cada categoria declara seus campos em `src/lib/campos-fornecedor/`; o mesmo
+  esquema monta o formulário e valida na Server Action. Vai para `fornecedores.detalhes` só o que é da categoria
+  atual: campos desconhecidos são descartados e trocar de categoria descarta os da anterior.
 - **Orçamento: planejado gravado, contratado calculado.** `orcamento_categorias` guarda só o planejado e as
   prioridades; o contratado é sempre a soma dos fornecedores `contratado`. A distribuição sugerida divide em reais
   inteiros pelos maiores restos e põe os centavos na reserva, então a soma é sempre exatamente o total.
