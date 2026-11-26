@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { ehSlugDeGuia } from "@/conteudo/guias/slugs";
 import type { Database } from "@/lib/database.types";
 import { emConstrucao, motivoEmConstrucao, supabaseEnv } from "@/lib/env";
 
@@ -27,6 +28,16 @@ export async function proxy(request: NextRequest) {
     r.headers.set("X-Robots-Tag", "noindex");
     r.headers.set("Cache-Control", "no-store");
     return r;
+  }
+
+  // Guia inexistente: 404 de verdade. O conteúdo do guia fica dentro de <Suspense> (para a navegação
+  // mostrar o casco na hora), e lá o notFound() só roda depois que a resposta já começou com 200.
+  // Reescrever para uma rota que não existe (pastas com "_" nunca viram rota) dá a página 404 padrão.
+  const guia = /^\/guias\/([^/]+)\/?$/.exec(request.nextUrl.pathname);
+  if (guia && !ehSlugDeGuia(decodificar(guia[1]))) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/_guia-nao-encontrado";
+    return NextResponse.rewrite(url);
   }
 
   let response = NextResponse.next({ request });
@@ -75,6 +86,15 @@ export async function proxy(request: NextRequest) {
   }
 
   return response;
+}
+
+/** decodeURIComponent que não lança com URL malformada (ex.: "%E0"). */
+function decodificar(segmento: string) {
+  try {
+    return decodeURIComponent(segmento);
+  } catch {
+    return segmento;
+  }
 }
 
 let avisado = false;
