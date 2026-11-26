@@ -9,6 +9,7 @@
 | `20261125000003_m0_rls.sql` | RLS, grants por coluna, permissões das funções |
 | `20261125000004_m0_tarefa_modelos.sql` | Catálogo inicial de 24 tarefas |
 | `20261126000001_m1_pacotes.sql` | M1 #1: pacotes de checklist, subitens, guias, `ativar_pacote`/`desativar_pacote`, backfill |
+| `20261126000002_m1_cerimonia.sql` | M1 #3: grupo de escolha `cerimonia` (católica, evangélica, outra, celebrante, só civil) e `pacotes.conclui` |
 
 ## Pacotes de checklist (M1)
 
@@ -18,6 +19,8 @@
 - **Guia**: `tarefa_modelos.guia` é o slug de um guia estático em `src/conteudo/guias/`.
 - **`substitui`**: códigos de modelos antigos que o novo absorve. A tarefa existente é reaproveitada,
   sem duplicar: se estava intacta, recebe o conteúdo novo; se foi concluída ou editada, só troca de modelo.
+- **`pacotes.conclui`**: códigos de modelos concluídos automaticamente quando o pacote é ativado
+  (ex.: escolher a cerimônia conclui "Decidir o tipo de cerimônia").
 - **Desativar** remove apenas tarefas `pendente` e não editadas (`tarefas.editada`, mantida pelo banco:
   editar campos ou mexer em subitens marca a tarefa).
 

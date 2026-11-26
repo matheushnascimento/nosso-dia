@@ -293,6 +293,7 @@ export type Database = {
           grupo_escolha: string | null;
           ordem: number;
           ativo: boolean;
+          conclui: string[];
         };
         Insert: {
           codigo: string;
@@ -302,6 +303,7 @@ export type Database = {
           grupo_escolha?: string | null;
           ordem?: number;
           ativo?: boolean;
+          conclui?: string[];
         };
         Update: {
           codigo?: string;
@@ -311,6 +313,7 @@ export type Database = {
           grupo_escolha?: string | null;
           ordem?: number;
           ativo?: boolean;
+          conclui?: string[];
         };
         Relationships: [];
       };

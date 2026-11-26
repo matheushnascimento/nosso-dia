@@ -15,10 +15,13 @@ export function EscolhaPacote({
   pergunta,
   opcoes,
   escolhido,
+  permitirNenhum = true,
 }: {
   pergunta: string;
   opcoes: Opcao[];
   escolhido: string | null;
+  /** Mostra "Ainda não decidimos" (desfaz a escolha). */
+  permitirNenhum?: boolean;
 }) {
   const [estado, acao, pendente] = useActionState(escolherPacote, ESTADO_INICIAL);
 
@@ -27,7 +30,7 @@ export function EscolhaPacote({
       <p className="text-sm font-medium">{pergunta}</p>
       <input type="hidden" name="atual" value={escolhido ?? ""} />
       <div className="flex flex-col gap-2">
-        {[...opcoes, { codigo: "", nome: "Ainda não decidimos", descricao: null }].map((o) => {
+        {(permitirNenhum ? [...opcoes, { codigo: "", nome: "Ainda não decidimos", descricao: null }] : opcoes).map((o) => {
           const ativo = (escolhido ?? "") === o.codigo;
           return (
             <button
