@@ -1,0 +1,9 @@
+{
+  "dialect": "postgres",
+  "url": "env(DATABASE_URL)",
+  "defaultSchemas": ["public"],
+  "excludePattern": "(public.ba_*|ba_*|migracoes.*|auth.*)",
+  "dateParser": "string",
+  "typeMapping": { "timestamptz": "string", "int8": "number" },
+  "outFile": "src/lib/db.types.ts"
+}

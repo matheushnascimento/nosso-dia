@@ -17,17 +17,24 @@ function useContinuacao() {
   if (next) qs.set("next", next);
   if (email) qs.set("email", email);
   const sufixo = qs.size ? `?${qs}` : "";
-  return { next, email, sufixo, erroLink: params.get("erro") === "link" };
+  return {
+    next,
+    email,
+    sufixo,
+    erroLink: params.get("erro") === "link" || params.has("error"),
+    senhaNova: params.get("senha") === "nova",
+  };
 }
 
 export function FormEntrar() {
-  const { next, email, sufixo, erroLink } = useContinuacao();
+  const { next, email, sufixo, erroLink, senhaNova } = useContinuacao();
   const [estado, acao] = useActionState(entrar, ESTADO_INICIAL);
 
   return (
     <form action={acao} className="flex flex-col gap-5">
       <Titulo>Que bom ver vocês</Titulo>
       {erroLink && <Aviso>O link expirou ou já foi usado. Entre ou peça um novo.</Aviso>}
+      {senhaNova && !estado.erro && <Aviso tipo="ok">Senha trocada. Entre com a nova senha.</Aviso>}
       {estado.erro && <Aviso>{estado.erro}</Aviso>}
       <input type="hidden" name="next" value={next} />
       <Campo rotulo="E-mail">
@@ -112,11 +119,28 @@ export function FormRecuperar() {
 }
 
 export function FormNovaSenha() {
+  const params = useSearchParams();
+  // O link do e-mail passa por /api/auth/reset-password e chega aqui com ?token= (ou ?error= se venceu).
+  const token = params.get("token") ?? "";
   const [estado, acao] = useActionState(definirNovaSenha, ESTADO_INICIAL);
+
+  if (!token) {
+    return (
+      <div className="flex flex-col gap-5">
+        <Titulo>Nova senha</Titulo>
+        <Aviso>Este link expirou ou já foi usado. Peça um novo para criar a senha.</Aviso>
+        <Link href="/recuperar-senha" className="text-center text-sm font-medium text-tinta hover:underline">
+          Pedir um novo link
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <form action={acao} className="flex flex-col gap-5">
       <Titulo>Nova senha</Titulo>
       {estado.erro && <Aviso>{estado.erro}</Aviso>}
+      <input type="hidden" name="token" value={token} />
       <Campo rotulo="Nova senha" dica="Pelo menos 8 caracteres.">
         <Entrada name="senha" type="password" autoComplete="new-password" minLength={8} required />
       </Campo>

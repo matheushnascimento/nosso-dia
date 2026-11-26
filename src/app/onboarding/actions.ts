@@ -1,14 +1,15 @@
 "use server";
 
+import { sql } from "kysely";
 import { redirect } from "next/navigation";
-import { requireSessao } from "@/lib/dal";
+import { consultar, requireSessao } from "@/lib/dal";
 import { lerData } from "@/lib/campos-evento";
 import { mensagemDeErro, type EstadoForm } from "@/lib/erros";
 import { parseBRL, parseInteiro, texto } from "@/lib/formato";
 import { UFS } from "@/lib/rotulos";
 
 export async function criarEvento(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
-  const { supabase } = await requireSessao();
+  const sessao = await requireSessao();
 
   const nome1 = texto(fd, "nome1");
   const nome2 = texto(fd, "nome2");
@@ -28,22 +29,31 @@ export async function criarEvento(_: EstadoForm, fd: FormData): Promise<EstadoFo
   const orcamento = parseBRL(texto(fd, "orcamento"));
   if (Number.isNaN(orcamento)) return { erro: "Não entendemos o valor do orçamento. Ex.: 45.000" };
 
-  const { error } = await supabase.rpc("criar_evento", {
-    p_nome_exibicao: `${nome1} & ${nome2}`,
-    p_data_status: data.data_status,
-    p_data: data.data,
-    p_horario_cerimonia: data.horario_cerimonia,
-    p_horario_festa: data.horario_festa,
-    p_cidade: texto(fd, "cidade") || undefined,
-    p_uf: uf || undefined,
-    p_convidados_estimados: convidados ?? undefined,
-    p_orcamento_total_centavos: orcamento ?? undefined,
-  });
-
-  if (error) {
-    if (error.hint === "ja_tem_evento") redirect("/painel");
-    return { erro: mensagemDeErro(error, "Não foi possível criar o casamento.") };
+  let jaTinha = false;
+  try {
+    await consultar(sessao, (trx) =>
+      sql`
+        select criar_evento(
+          p_nome_exibicao            => ${`${nome1} & ${nome2}`},
+          p_data_status              => ${data.data_status}::public.data_status,
+          p_data                     => ${data.data ?? null}::date,
+          p_horario_cerimonia        => ${data.horario_cerimonia ?? null}::time,
+          p_horario_festa            => ${data.horario_festa ?? null}::time,
+          p_cidade                   => ${texto(fd, "cidade") || null},
+          p_uf                       => ${uf || null},
+          p_convidados_estimados     => ${convidados ?? null}::integer,
+          p_orcamento_total_centavos => ${orcamento ?? null}::bigint
+        )
+      `.execute(trx),
+    );
+  } catch (e) {
+    if ((e as { hint?: string }).hint !== "ja_tem_evento") {
+      return { erro: mensagemDeErro(e, "Não foi possível criar o casamento.") };
+    }
+    jaTinha = true;
   }
+  // redirect fora do try: ele funciona lançando uma exceção do Next
+  if (jaTinha) redirect("/painel");
 
   redirect("/painel?bem-vindos=1");
 }

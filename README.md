@@ -1,34 +1,33 @@
 # Nosso Dia
 
-Planejamento de casamento para os dois, num só lugar. Este repositório contém o **M0 · Fundação**:
-conta do casal, onboarding, convite do parceiro, painel e um checklist cujos prazos se ajustam
-sozinhos à data do casamento.
+Planejamento de casamento para os dois, num só lugar: conta do casal, onboarding, convite do parceiro,
+painel, checklists guiados (cerimônia, civil, trajes, kit do dia D…) cujos prazos se ajustam sozinhos à data
+do casamento, e os votos de cada um.
 
-**Stack:** Next.js 16 (App Router, Cache Components, Server Actions) · Supabase (Postgres + Auth + RLS) · Tailwind CSS 4.
+**Stack:** Next.js 16 (App Router, Cache Components, Server Actions) · Postgres com RLS (Neon em produção) ·
+Better Auth · Kysely · Resend · Tailwind CSS 4.
 
 ## Rodando localmente
 
-Pré-requisitos: Node 20+, Docker (para o Supabase local).
+Pré-requisitos: Node 20+ e Docker.
 
 ```bash
 npm install
-npm run db:start        # sobe o Supabase local (Docker) e aplica as migrations
-cp .env.example .env.local   # preencha com a URL e a chave de `npx supabase status`
-npm run db:types        # regenera src/lib/database.types.ts a partir do banco
+cp .env.example .env.local   # DATABASE_URL já aponta para o Postgres local; gere o BETTER_AUTH_SECRET
+npm run db:start             # Postgres 17 em Docker (porta 54320)
+npm run db:migrate           # aplica as migrations de db/migrations
+npm run db:test              # testes SQL do banco
+npm run db:test:app          # RLS pela camada do app (usa o banco do .env.local)
 npm run dev
 ```
 
-A configuração do Supabase local está em `supabase/config.toml` (não rode `supabase init`).
-Os e-mails de confirmação e de nova senha caem no Mailpit (`npx supabase status` mostra a URL), e a
-confirmação de e-mail vem desligada para desenvolvimento.
+**Login:** Better Auth, com usuários e sessões no mesmo Postgres. Sem `RESEND_API_KEY`, os e-mails de confirmação
+e de nova senha não saem: o link aparece no terminal do `npm run dev`.
 
 Abrindo o `npm run dev` **de outro computador** (pelo IP ou nome da máquina)? Ponha esse endereço em
 `DEV_ORIGINS` no `.env.local` (ex.: `DEV_ORIGINS=192.168.0.10`) e em `NEXT_PUBLIC_SITE_URL`. Sem isso, o
-servidor de desenvolvimento bloqueia os próprios scripts: a página carrega, mas botões como o
-"Continuar" do onboarding não respondem.
-Para os links dos e-mails (nova senha, confirmação) também funcionarem de lá, troque em
-`supabase/config.toml` o `external_url` (ex.: `http://homeserver:54321`) e o `site_url`
-(ex.: `http://homeserver:3000`) e reinicie com `npx supabase stop && npx supabase start`.
+servidor de desenvolvimento bloqueia os próprios scripts (a página carrega, mas botões como o "Continuar" do
+onboarding não respondem) e o login recusa o pedido por vir de uma origem desconhecida.
 
 ### Scripts
 
@@ -38,45 +37,76 @@ Para os links dos e-mails (nova senha, confirmação) também funcionarem de lá
 | `npm run build` | Build de produção (exige as variáveis de `.env.example`) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | Gera tipos de rota e roda `tsc` |
-| `npm run db:start` / `db:reset` | Supabase local / reaplica todas as migrations |
-| `npm run db:types` | Regenera os tipos do banco |
+| `npm run db:start` / `db:stop` | Sobe / para o Postgres local (Docker) |
+| `npm run db:migrate` / `db:status` | Aplica as migrations pendentes / mostra a situação |
+| `npm run db:reset` | Apaga e recria o banco **local** com todas as migrations |
+| `npm run db:test` | Testes SQL do banco (dentro do contêiner) |
+| `npm run db:test:app` | Teste de RLS pela camada do app (`comoUsuario`) |
+| `npm run db:types` | Gera `src/lib/db.types.ts` a partir do banco (`.kysely-codegenrc.json`) |
 
 ## Deploy e página "em construção"
 
-Sem `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (ou com `EM_CONSTRUCAO=1`), o `proxy.ts`
-serve `public/em-construcao.html` em **todas** as rotas, com `noindex`. O build não precisa de nenhuma variável.
+Sem `DATABASE_URL` ou `BETTER_AUTH_SECRET` (ou com `EM_CONSTRUCAO=1`), o `proxy.ts` serve
+`public/em-construcao.html` em **todas** as rotas, com `noindex`. O build não precisa de nenhuma variável.
+
+Produção: Vercel + Neon (pela integração do Marketplace, que cria `DATABASE_URL` e `DATABASE_URL_UNPOOLED`) +
+Resend. Variáveis só no ambiente **Production**; os previews ficam sem banco e mostram o "em construção".
+
+| Variável | Valor |
+|---|---|
+| `DATABASE_URL` | criada pela integração do Neon (com pooler) |
+| `DATABASE_URL_UNPOOLED` | criada pela integração (conexão direta, usada pelas migrations) |
+| `BETTER_AUTH_SECRET` | `openssl rand -base64 32`, só deste ambiente (**secreta**) |
+| `NEXT_PUBLIC_SITE_URL` | `https://nossodia.mhdn.com.br` |
+| `RESEND_API_KEY` | chave do Resend (**secreta**) |
+| `EMAIL_REMETENTE` | `Nosso Dia <nao-responda@...>`, num domínio verificado no Resend |
+
+Nenhuma chave secreta vai em `NEXT_PUBLIC_*`: essas são embutidas no JavaScript do navegador.
+
+**Migrations não rodam no build**, de propósito (um preview nunca mexe no banco de produção). Antes do deploy
+que depende delas, rode da sua máquina com a conexão direta do Neon:
+
+```bash
+MIGRATIONS_DATABASE_URL='<DATABASE_URL_UNPOOLED do Neon>' npm run db:migrate
+```
+
+O `db:migrate` é idempotente, trava contra execuções simultâneas e recusa migrations já aplicadas que foram
+editadas. Nunca rode `db:reset` nem os testes (`db:test:app`) contra produção.
 
 Para lançar o app num projeto da Vercel que está mostrando o placeholder:
-1. Configure as variáveis do `.env.example` no projeto (Production).
-2. Remova `EM_CONSTRUCAO`, se existir.
+1. Aplique as migrations (acima).
+2. Configure as variáveis da tabela (Production) e remova `EM_CONSTRUCAO`, se existir.
 3. Faça um novo deploy. As `NEXT_PUBLIC_*` são embutidas no build, então só salvar as variáveis não basta.
 
 ## Estrutura
 
 ```text
-supabase/
+db/
   migrations/          schema, regras (RPCs, triggers, view), RLS, catálogo de tarefas
   testes/              testes SQL dos critérios de aceite (rodam num Postgres comum)
 src/
-  proxy.ts             renova a sessão e redireciona rotas protegidas (antigo middleware)
+  proxy.ts             redireciona rotas protegidas e telas de visitante (antigo middleware)
   lib/
-    dal.ts             Data Access Layer: único ponto que lê a sessão (getSessao, requireEvento…)
-    supabase/server.ts cliente Supabase por requisição
-    database.types.ts  tipos do banco, gerados com `npm run db:types` (não editar à mão)
+    dal.ts             Data Access Layer: único ponto que lê a sessão (getSessao, consultar, requireEvento…)
+    auth.ts            Better Auth (e-mail e senha, confirmação, nova senha)
+    db.ts              conexões com o Postgres (app e login); acesso só por noBanco/noBancoVisitante
+    rls.ts             comoUsuario/comoVisitante: papel e identidade da requisição em cada transação
+    db.types.ts        tipos do banco, gerados com `npm run db:types` (não editar à mão)
+    tipos.ts           tipos de linha usados pelas telas (Evento, Convite…)
     tarefas.ts         leitura e ordenação das tarefas e dos subitens
     pacotes.ts         checklists ativos e grupos de escolha
     datas.ts           datas em America/Sao_Paulo
     formato.ts         dinheiro em centavos, parse de formulários
     rotulos.ts         categorias, grupos, UFs
     erros.ts           mensagens de erro em português (mapeia os `hint` do banco)
-    email.ts           envio do convite via Resend (opcional)
+    email.ts           e-mails via Resend (confirmação, nova senha, convite)
   conteudo/guias/      guias estáticos (/guias/<slug>), ligados a tarefas por `tarefa_modelos.guia`
   components/          UI básica (ui.tsx), botão com estado de envio, campos de data
   app/
     page.tsx           landing (estática)
     (auth)/            entrar, cadastrar, recuperar-senha, nova-senha + actions
-    auth/callback/     troca o ?code= dos links de e-mail por sessão
-    onboarding/        T2 · 4 passos → rpc criar_evento
+    api/auth/          endpoints do Better Auth (links de confirmação e de nova senha)
+    onboarding/        T2 · 4 passos → criar_evento
     convite/[token]/   T3 · landing do convite e aceite
     (app)/painel/      T4 · contagem regressiva, progresso, orçamento, próximas tarefas
     (app)/tarefas/     T5 · lista agrupada, filtros, nova/editar/concluir/excluir
@@ -92,16 +122,23 @@ src/
   (`criar_evento`, `aceitar_convite`); o RLS bloqueia o resto.
 - **Cache Components está ligado.** Toda leitura de sessão fica dentro de `<Suspense>`; o casco das páginas
   é pré-renderizado e o conteúdo do casal chega por streaming. Nada do casal é cacheado no servidor.
+- **Toda consulta roda como o usuário.** O app entra no banco como dono, mas cada consulta passa por
+  `consultar(sessao, ...)` (DAL), que abre uma transação com o papel `authenticated` e a identidade da sessão
+  (`auth.uid()`). O RLS vale sempre, como no Supabase. Visitante sem login: `noBancoVisitante` (papel `anon`).
 - **Server Actions sempre reautenticam** pela DAL e filtram por `evento_id`, além do RLS.
+- **Login fora do alcance do app.** As tabelas do Better Auth (`ba_*`) só são acessíveis ao dono; um trigger
+  copia cada conta para `auth.users`, que é o que o resto do banco usa.
 - **Votos são privados de verdade.** Só o autor lê o texto (RLS); o parceiro vê apenas a situação, pela RPC
   `status_votos`, que nunca devolve o texto. A escrita é só pela RPC `salvar_votos`.
-- **`database.types.ts` é gerado do banco.** Depois de criar ou mudar uma migration, rode
-  `npx supabase migration up` e `npm run db:types` e faça commit do arquivo junto com a migration.
+- **Migrations são imutáveis depois de aplicadas.** Para mudar algo, crie uma migration nova; o `db:migrate`
+  recusa rodar se uma já aplicada foi editada.
+- **Tipos gerados do banco** (`npm run db:types`): datas como `"YYYY-MM-DD"`, timestamps como texto ISO e
+  centavos como número, que é como a conexão do app devolve.
 
 ## Testes do banco sem Docker
 
 ```bash
-PGHOST=localhost PGUSER=postgres supabase/testes/rodar.sh
+npm run db:test   # ou: PGHOST=localhost PGUSER=postgres db/testes/rodar.sh
 ```
 
-Detalhes do contrato entre telas e banco: [`supabase/README.md`](supabase/README.md).
+Detalhes do contrato entre telas e banco: [`db/README.md`](db/README.md).

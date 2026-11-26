@@ -1,11 +1,11 @@
-import { createServerClient } from "@supabase/ssr";
+import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 import { ehSlugDeGuia } from "@/conteudo/guias/slugs";
-import type { Database } from "@/lib/database.types";
-import { emConstrucao, motivoEmConstrucao, supabaseEnv } from "@/lib/env";
+import { auth } from "@/lib/auth";
+import { emConstrucao, motivoEmConstrucao } from "@/lib/env";
 
 /** Rotas que exigem login. */
-const PROTEGIDAS = ["/painel", "/tarefas", "/configuracoes", "/votos", "/onboarding", "/nova-senha"];
+const PROTEGIDAS = ["/painel", "/tarefas", "/configuracoes", "/votos", "/onboarding"];
 /** Rotas que um usuário logado não precisa ver. */
 const SO_DESLOGADO = ["/", "/entrar", "/cadastrar"];
 
@@ -14,8 +14,12 @@ function casa(path: string, prefixos: string[]) {
 }
 
 /**
- * Renova a sessão do Supabase a cada requisição e faz o roteamento básico de auth.
- * A autorização de verdade fica no banco (RLS) e na DAL (src/lib/dal.ts).
+ * Roteamento básico de auth. A autorização de verdade fica no banco (RLS) e na DAL (src/lib/dal.ts).
+ *
+ * - Rotas protegidas: checagem otimista, só pela presença do cookie de sessão (sem ir ao banco).
+ *   Cookie vencido passa, e a DAL manda para /entrar.
+ * - Telas de visitante ("/", entrar, cadastrar): consulta a sessão de verdade antes de mandar para
+ *   o painel. Com a checagem otimista, um cookie vencido faria um vaivém infinito com /entrar.
  */
 export async function proxy(request: NextRequest) {
   // Modo "em construção": toda página mostra o placeholder estático (public/em-construcao.html).
@@ -40,52 +44,28 @@ export async function proxy(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
-  let response = NextResponse.next({ request });
-  const { url: supabaseUrl, chave } = supabaseEnv();
-
-  const supabase = createServerClient<Database>(supabaseUrl, chave, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet, headers) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options),
-        );
-        Object.entries(headers).forEach(([key, value]) => response.headers.set(key, value));
-      },
-    },
-  });
-
-  // Não coloque código entre a criação do cliente e getClaims().
-  const { data } = await supabase.auth.getClaims();
-  const logado = Boolean(data?.claims);
   const path = request.nextUrl.pathname;
+  const temCookie = Boolean(getSessionCookie(request, { cookiePrefix: "nosso-dia" }));
 
-  const redirecionar = (destino: URL) => {
-    const r = NextResponse.redirect(destino);
-    response.cookies.getAll().forEach((c) => r.cookies.set(c));
-    return r;
-  };
-
-  if (!logado && casa(path, PROTEGIDAS)) {
+  if (!temCookie && casa(path, PROTEGIDAS)) {
     const url = request.nextUrl.clone();
     url.pathname = "/entrar";
     url.search = "";
     url.searchParams.set("next", path + request.nextUrl.search);
-    return redirecionar(url);
+    return NextResponse.redirect(url);
   }
 
-  if (logado && casa(path, SO_DESLOGADO)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/painel";
-    url.search = "";
-    return redirecionar(url);
+  if (temCookie && casa(path, SO_DESLOGADO)) {
+    const sessao = await auth().api.getSession({ headers: request.headers });
+    if (sessao) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/painel";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
-  return response;
+  return NextResponse.next();
 }
 
 /** decodeURIComponent que não lança com URL malformada (ex.: "%E0"). */
@@ -106,5 +86,6 @@ function avisarEmDesenvolvimento() {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|em-construcao.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+  // /api/auth fica de fora: os links dos e-mails precisam chegar ao Better Auth mesmo com cookie.
+  matcher: ["/((?!_next/static|_next/image|api/auth|favicon.ico|em-construcao.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };

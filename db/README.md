@@ -1,9 +1,35 @@
-# Nosso Dia · Supabase
+# Nosso Dia · Banco
 
-## M0 · Fundação
+Postgres puro (Neon em produção, Docker no desenvolvimento). As migrations ficam em `db/migrations` e são
+aplicadas em ordem por `scripts/db.mjs`, que registra cada uma em `migracoes.aplicadas` com o hash do arquivo.
+
+## Base (o que vinha do Supabase)
+
+`20261124000000_base.sql` roda antes de tudo e cria o que o app usava do Supabase:
+
+- papéis `anon` e `authenticated` (NOLOGIN). O usuário dono do banco, o mesmo do app, recebe o direito de
+  assumi-los (`WITH SET TRUE`, necessário no Postgres 16+ sem superusuário, como no Neon);
+- schema `auth`: tabela `auth.users` (preenchida pelo app ao criar a conta) e as funções `auth.uid()` e
+  `auth.jwt()`, que leem `request.jwt.claim.sub` e `request.jwt.claims`;
+- as mesmas permissões padrão que o Supabase dava em `public`, para o RLS das migrations seguintes valer igual.
+
+**Como o app usa** (`src/lib/rls.ts`): cada consulta abre uma transação, troca para o papel `authenticated` e
+define a identidade, tudo com escopo da transação:
+
+```sql
+begin;
+select set_config('role', 'authenticated', true),
+       set_config('request.jwt.claim.sub', '<id do usuário>', true),
+       set_config('request.jwt.claims', '{"sub": "<id>", "email": "<e-mail>"}', true);
+-- consultas do app: o RLS vale como no Supabase
+commit;
+```
+
+## Migrations
 
 | Migration | Conteúdo |
 |---|---|
+| `20261124000000_base.sql` | Papéis, schema `auth`, permissões padrão (substitui o Supabase) |
 | `20261125000001_m0_schema.sql` | Tipos, tabelas, constraints, índices |
 | `20261125000002_m0_funcoes.sql` | Prazo efetivo, view `tarefas_com_prazo`, triggers, RPCs |
 | `20261125000003_m0_rls.sql` | RLS, grants por coluna, permissões das funções |
@@ -12,6 +38,11 @@
 | `20261126000002_m1_cerimonia.sql` | M1 #3: grupo de escolha `cerimonia` (católica, evangélica, outra, celebrante, só civil) e `pacotes.conclui` |
 | `20261126000003_m1_aliancas_lua_de_mel_kit.sql` | M1 #4, #7, #8: pacotes automáticos `aliancas`, `lua_de_mel`, `dia_d`; marca edições anteriores ao M1 |
 | `20261126000004_m1_trajes_beleza.sql` | M1 #5, #6: modelos **por parceiro** (`trajes_noivos`), `beleza`; `aceitar_convite` divide as tarefas por parceiro |
+| `20261126000005_data_no_passado.sql` | Data do casamento não pode ser marcada no passado (`hint data_passada`) |
+| `20261126000006_m1_votos.sql` | M1 #9: votos privados (`salvar_votos`, `status_votos`), tarefa por parceiro, link no kit |
+| `20261126000007_m1_civil.sql` | M1 #2: pacote `civil` (habilitação, regime de bens, pacto) |
+| `20261126000008_previa_data_opcional.sql` | `previa_mudanca_data` com `p_data default null` |
+| `20261126000009_better_auth.sql` | Tabelas `ba_*` do Better Auth (só o dono acessa) e trigger `ba_user` → `auth.users` |
 
 ## Pacotes de checklist (M1)
 
@@ -46,44 +77,50 @@ Para pacotes de escolha, não rode `_aplicar_pacote_em_todos`: o casal ativa pel
 ### Aplicar
 
 ```bash
-supabase init          # se o projeto ainda não tiver supabase/config.toml
-supabase start         # local (Docker)
-supabase db reset      # aplica todas as migrations
-supabase gen types typescript --local > src/lib/database.types.ts
+npm run db:start     # Postgres 17 local (compose.yaml), porta 54320
+npm run db:migrate   # aplica as pendentes (lê DATABASE_URL do .env.local)
+npm run db:status    # aplicadas × pendentes (e alteradas, que dão erro)
+npm run db:reset     # APAGA e recria o banco local; recusa banco que não seja local
 ```
 
-Remoto: `supabase link --project-ref <ref>` e depois `supabase db push`.
+Produção (Neon): `DATABASE_URL_UNPOOLED=<conexão direta> npm run db:migrate`. Nunca edite uma migration já
+aplicada: crie outra. O script recusa rodar se o hash de uma aplicada mudou.
 
 ### Contrato com o front (Next.js)
 
+Tudo por SQL no servidor (Kysely), dentro de `consultar(sessao, ...)`. Funções do banco são chamadas com
+`select * from funcao(...)`.
+
+
 | Tela | Chamada |
 |---|---|
-| T1 Cadastro | `supabase.auth.signUp({ email, password, options: { data: { nome } } })`. O perfil é criado por trigger |
-| T2 Onboarding | `rpc('criar_evento', { p_nome_exibicao, p_data_status, p_data, ... })` → `evento_id` |
-| T3 Convite | `from('convites_parceiro').insert({ evento_id, email, convidado_por: user.id })` → `token`; e-mail enviado pelo Next (server action) com link `/convite/<token>` |
-| T3 Landing | `rpc('obter_convite', { p_token })` (funciona sem login) |
-| T3 Aceitar | `rpc('aceitar_convite', { p_token })`. Exige e-mail da conta = e-mail convidado |
-| T4/T5 Painel e Tarefas | `from('tarefas_com_prazo').select()`, com colunas `prazo_efetivo`, `grupo`, `prazo_travado`, `prazo_aproximado` |
+| T1 Cadastro | Better Auth `signUpEmail({ name, email, password })` → `ba_user` → trigger cria `auth.users` → trigger cria o perfil |
+| T2 Onboarding | `select criar_evento(p_nome_exibicao => ..., p_data_status => ..., ...)` → `evento_id` |
+| T3 Convite | `insert into convites_parceiro (evento_id, email, convidado_por) ... returning token`; e-mail enviado pelo Next (server action) com link `/convite/<token>` |
+| T3 Landing | `select * from obter_convite(token)` como visitante (`noBancoVisitante`) |
+| T3 Aceitar | `select aceitar_convite(token)`. Exige e-mail da conta = e-mail convidado |
+| T4/T5 Painel e Tarefas | `select * from tarefas_com_prazo`, com colunas `prazo_efetivo`, `grupo`, `prazo_travado`, `prazo_aproximado` |
 | T5 Ações | `update` em `tarefas` (`status`, `responsavel`, `prazo_fixo`...); conclusão carimbada por trigger |
-| T6 Mudar data | `rpc('previa_mudanca_data', ...)` → confirmar → `update` em `eventos` |
-| T6 Checklists | `rpc('ativar_pacote', { p_evento_id, p_pacote })` → `{ criadas, removidas }`; `rpc('desativar_pacote', ...)` |
+| T6 Mudar data | `select * from previa_mudanca_data(...)` → confirmar → `update` em `eventos` |
+| T6 Checklists | `select * from ativar_pacote(evento, pacote)` → `criadas, removidas`; `select desativar_pacote(...)` |
 | T5 Itens | `tarefa_subitens` (select/insert/update `feito`/delete); contagem em `tarefas_com_prazo.subitens_total/feitos` |
 
 Erros de regra de negócio vêm com `hint`: `ja_tem_evento`, `limite_parceiros`, `convite_invalido`, `email_diferente`,
 `pacote_automatico`, `pacote_inexistente`.
 
-### Testes locais (sem Docker)
-
-Num Postgres comum (cria os bancos `nd_teste_a` e `nd_teste_b`):
+### Testes do banco
 
 ```bash
-PGHOST=localhost PGUSER=postgres supabase/testes/rodar.sh
+npm run db:test                                  # dentro do contêiner do db:start (não precisa de psql)
+PGHOST=localhost PGUSER=postgres db/testes/rodar.sh   # ou em qualquer Postgres 16+ com psql
 ```
+
+Cada rodada cria um banco próprio (`nd_teste_a`, `_b`, `_c`) e começa pela migration base.
 
 - Rodada A: todas as migrations e os testes do M0 (`10_testes.sql`), para pegar regressões.
 - Rodada B: M0, dados "antigos" (`15_dados_pre_m1.sql`), só a infra do M1 e `20_testes_m1.sql`
   (backfill, absorção, escolha de pacotes, subitens, RLS, com pacotes fictícios).
 - Rodada C: M0, dados "antigos", todas as migrations e os testes de conteúdo
-  (`30_testes_cerimonia.sql`, `40_testes_aliancas_lua_de_mel_kit.sql`).
+  (`30_` a `80_testes_*.sql`).
 
 Cada rodada usa um banco próprio. Uma migration de conteúdo nova ganha seu arquivo de testes na rodada C.

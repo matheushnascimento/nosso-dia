@@ -8,14 +8,21 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "db:start": "npx supabase start",
-    "db:reset": "npx supabase db reset",
-    "db:types": "npx supabase gen types typescript --local > src/lib/database.types.ts"
+    "db:start": "docker compose up -d --wait db",
+    "db:stop": "docker compose stop db",
+    "db:migrate": "node scripts/db.mjs migrar",
+    "db:status": "node scripts/db.mjs status",
+    "db:reset": "node scripts/db.mjs resetar",
+    "db:test": "docker compose exec -T -u postgres -e PGHOST=/var/run/postgresql db /nosso-dia/db/testes/rodar.sh",
+    "db:types": "kysely-codegen --env-file .env.local",
+    "db:test:app": "tsx db/testes/rls-app.mts"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.119.2",
+    "better-auth": "^1.7.28",
+    "kysely": "^0.29.9",
+    "kysely-postgres-js": "^5.1.0",
     "next": "16.4.6",
+    "postgres": "^3.4.9",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "^0.0.1"
@@ -27,7 +34,10 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "kysely-codegen": "^0.20.0",
+    "pg": "^8.23.1",
     "tailwindcss": "4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

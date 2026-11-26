@@ -1,13 +1,13 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { requireEvento } from "@/lib/dal";
-import { mensagemDeErro, type EstadoForm } from "@/lib/erros";
+import { consultar, requireEvento } from "@/lib/dal";
+import { mensagemDeErro, semDerrubar, type EstadoForm } from "@/lib/erros";
 import { parseInteiro, texto } from "@/lib/formato";
 import { CATEGORIAS } from "@/lib/rotulos";
 
 /**
- * Toda action reautentica pela DAL e filtra por evento_id.
+ * Toda action reautentica pela DAL, roda como o usuário (RLS valendo) e filtra por evento_id.
  * O RLS no banco é a garantia final; o filtro aqui é defesa em profundidade.
  */
 
@@ -46,16 +46,24 @@ export async function criarTarefa(_: EstadoForm, fd: FormData): Promise<EstadoFo
   const prazo = lerPrazo(fd);
   if ("erro" in prazo) return { erro: prazo.erro };
 
-  const { error } = await ctx.supabase.from("tarefas").insert({
-    evento_id: ctx.evento.id,
-    titulo,
-    descricao: texto(fd, "descricao") || null,
-    categoria: lerCategoria(fd),
-    responsavel: lerResponsavel(fd),
-    ordem: 1000,
-    ...prazo,
-  });
-  if (error) return { erro: mensagemDeErro(error, "Não foi possível criar a tarefa.") };
+  try {
+    await consultar(ctx, (trx) =>
+      trx
+        .insertInto("tarefas")
+        .values({
+          evento_id: ctx.evento.id,
+          titulo,
+          descricao: texto(fd, "descricao") || null,
+          categoria: lerCategoria(fd),
+          responsavel: lerResponsavel(fd),
+          ordem: 1000,
+          ...prazo,
+        })
+        .execute(),
+    );
+  } catch (e) {
+    return { erro: mensagemDeErro(e, "Não foi possível criar a tarefa.") };
+  }
 
   refresh();
   return { ok: `“${titulo}” adicionada.` };
@@ -65,11 +73,16 @@ export async function alternarTarefa(fd: FormData) {
   const ctx = await requireEvento();
   const id = texto(fd, "id");
   const concluir = texto(fd, "concluir") === "1";
-  await ctx.supabase
-    .from("tarefas")
-    .update({ status: concluir ? "concluida" : "pendente" })
-    .eq("id", id)
-    .eq("evento_id", ctx.evento.id);
+  await semDerrubar("alternarTarefa", () =>
+    consultar(ctx, (trx) =>
+      trx
+        .updateTable("tarefas")
+        .set({ status: concluir ? "concluida" : "pendente" })
+        .where("id", "=", id)
+        .where("evento_id", "=", ctx.evento.id)
+        .execute(),
+    ),
+  );
   refresh();
 }
 
@@ -83,18 +96,24 @@ export async function editarTarefa(_: EstadoForm, fd: FormData): Promise<EstadoF
   const prazoFixo = texto(fd, "prazo_fixo");
   if (prazoFixo && !/^\d{4}-\d{2}-\d{2}$/.test(prazoFixo)) return { erro: "Data de prazo inválida." };
 
-  const { error } = await ctx.supabase
-    .from("tarefas")
-    .update({
-      titulo,
-      descricao: texto(fd, "descricao") || null,
-      categoria: lerCategoria(fd),
-      responsavel: lerResponsavel(fd),
-      prazo_fixo: prazoFixo || null,
-    })
-    .eq("id", id)
-    .eq("evento_id", ctx.evento.id);
-  if (error) return { erro: mensagemDeErro(error, "Não foi possível salvar.") };
+  try {
+    await consultar(ctx, (trx) =>
+      trx
+        .updateTable("tarefas")
+        .set({
+          titulo,
+          descricao: texto(fd, "descricao") || null,
+          categoria: lerCategoria(fd),
+          responsavel: lerResponsavel(fd),
+          prazo_fixo: prazoFixo || null,
+        })
+        .where("id", "=", id)
+        .where("evento_id", "=", ctx.evento.id)
+        .execute(),
+    );
+  } catch (e) {
+    return { erro: mensagemDeErro(e, "Não foi possível salvar.") };
+  }
 
   refresh();
   return { ok: "Salvo." };
@@ -102,7 +121,11 @@ export async function editarTarefa(_: EstadoForm, fd: FormData): Promise<EstadoF
 
 export async function excluirTarefa(fd: FormData) {
   const ctx = await requireEvento();
-  await ctx.supabase.from("tarefas").delete().eq("id", texto(fd, "id")).eq("evento_id", ctx.evento.id);
+  await semDerrubar("excluirTarefa", () =>
+    consultar(ctx, (trx) =>
+      trx.deleteFrom("tarefas").where("id", "=", texto(fd, "id")).where("evento_id", "=", ctx.evento.id).execute(),
+    ),
+  );
   refresh();
 }
 
@@ -113,10 +136,11 @@ export async function excluirTarefa(fd: FormData) {
 
 export async function alternarSubitem(fd: FormData) {
   const ctx = await requireEvento();
-  await ctx.supabase
-    .from("tarefa_subitens")
-    .update({ feito: texto(fd, "feito") === "1" })
-    .eq("id", texto(fd, "id"));
+  await semDerrubar("alternarSubitem", () =>
+    consultar(ctx, (trx) =>
+      trx.updateTable("tarefa_subitens").set({ feito: texto(fd, "feito") === "1" }).where("id", "=", texto(fd, "id")).execute(),
+    ),
+  );
   refresh();
 }
 
@@ -126,20 +150,25 @@ export async function adicionarSubitem(fd: FormData) {
   const novo = texto(fd, "texto").slice(0, 200);
   if (!novo) return;
 
-  const { data: tarefa } = await ctx.supabase
-    .from("tarefas")
-    .select("id")
-    .eq("id", tarefaId)
-    .eq("evento_id", ctx.evento.id)
-    .maybeSingle();
-  if (!tarefa) return;
-
-  await ctx.supabase.from("tarefa_subitens").insert({ tarefa_id: tarefaId, texto: novo, ordem: 1000 });
+  await semDerrubar("adicionarSubitem", () =>
+    consultar(ctx, async (trx) => {
+      const tarefa = await trx
+        .selectFrom("tarefas")
+        .select("id")
+        .where("id", "=", tarefaId)
+        .where("evento_id", "=", ctx.evento.id)
+        .executeTakeFirst();
+      if (!tarefa) return;
+      await trx.insertInto("tarefa_subitens").values({ tarefa_id: tarefaId, texto: novo, ordem: 1000 }).execute();
+    }),
+  );
   refresh();
 }
 
 export async function excluirSubitem(fd: FormData) {
   const ctx = await requireEvento();
-  await ctx.supabase.from("tarefa_subitens").delete().eq("id", texto(fd, "id"));
+  await semDerrubar("excluirSubitem", () =>
+    consultar(ctx, (trx) => trx.deleteFrom("tarefa_subitens").where("id", "=", texto(fd, "id")).execute()),
+  );
   refresh();
 }

@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Campo, Entrada, cx } from "@/components/ui";
-import type { Enums } from "@/lib/database.types";
+import type { DataStatus } from "@/lib/tipos";
 
-const OPCOES: { valor: Enums<"data_status">; rotulo: string }[] = [
+const OPCOES: { valor: DataStatus; rotulo: string }[] = [
   { valor: "definida", rotulo: "Já temos a data" },
   { valor: "mes_estimado", rotulo: "Sabemos o mês" },
   { valor: "indefinida", rotulo: "Ainda não sabemos" },
@@ -22,14 +22,14 @@ export function CamposData({
   /** Hoje (YYYY-MM-DD, America/Sao_Paulo): bloqueia datas no passado no seletor. */
   hoje: string;
   inicial?: {
-    data_status: Enums<"data_status">;
+    data_status: DataStatus;
     data: string | null;
     horario_cerimonia: string | null;
     horario_festa: string | null;
   };
   onChange?: () => void;
 }) {
-  const [status, setStatus] = useState<Enums<"data_status">>(inicial?.data_status ?? "definida");
+  const [status, setStatus] = useState<DataStatus>(inicial?.data_status ?? "definida");
   // A data já salva continua válida mesmo que tenha passado (o casamento aconteceu).
   const dataSalva = inicial?.data_status === "definida" ? (inicial.data ?? "") : "";
   const mesSalvo = inicial?.data_status === "mes_estimado" ? (inicial.data?.slice(0, 7) ?? "") : "";

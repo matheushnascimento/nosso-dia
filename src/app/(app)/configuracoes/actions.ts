@@ -1,11 +1,12 @@
 "use server";
 
+import { sql } from "kysely";
 import { refresh } from "next/cache";
 import { lerData } from "@/lib/campos-evento";
-import { requireEvento } from "@/lib/dal";
+import { consultar, requireEvento } from "@/lib/dal";
 import { enviarEmailConvite } from "@/lib/email";
 import { SITE_URL } from "@/lib/env";
-import { mensagemDeErro, type EstadoForm } from "@/lib/erros";
+import { mensagemDeErro, semDerrubar, type EstadoForm } from "@/lib/erros";
 import { parseBRL, parseInteiro, texto } from "@/lib/formato";
 import { UFS } from "@/lib/rotulos";
 
@@ -28,7 +29,7 @@ export type ResultadoEvento =
  */
 export async function salvarEvento(fd: FormData): Promise<ResultadoEvento> {
   const ctx = await requireEvento();
-  const { supabase, evento } = ctx;
+  const { evento } = ctx;
 
   const nome = texto(fd, "nome_exibicao");
   if (!nome) return { tipo: "erro", mensagem: "Dê um nome para o casamento." };
@@ -50,30 +51,41 @@ export async function salvarEvento(fd: FormData): Promise<ResultadoEvento> {
   const dataMudou = data.data_status !== evento.data_status || novaData !== evento.data;
 
   if (dataMudou && texto(fd, "confirmado") !== "1") {
-    const { data: previa, error } = await supabase.rpc("previa_mudanca_data", {
-      p_evento_id: evento.id,
-      p_data_status: data.data_status,
-      p_data: data.data,
-    });
-    if (error || !previa?.[0]) return { tipo: "erro", mensagem: mensagemDeErro(error) };
-    return { tipo: "previa", previa: previa[0] };
+    try {
+      const { rows } = await consultar(ctx, (trx) =>
+        sql<Previa>`
+          select mudam_de_prazo, prazo_travado, passam_a_atrasadas, ficam_sem_prazo
+            from previa_mudanca_data(${evento.id}::uuid, ${data.data_status}::public.data_status, ${novaData}::date)
+        `.execute(trx),
+      );
+      if (!rows[0]) return { tipo: "erro", mensagem: mensagemDeErro(null) };
+      return { tipo: "previa", previa: rows[0] };
+    } catch (e) {
+      return { tipo: "erro", mensagem: mensagemDeErro(e) };
+    }
   }
 
-  const { error } = await supabase
-    .from("eventos")
-    .update({
-      nome_exibicao: nome,
-      data_status: data.data_status,
-      data: novaData,
-      horario_cerimonia: data.horario_cerimonia ?? null,
-      horario_festa: data.horario_festa ?? null,
-      cidade: texto(fd, "cidade") || null,
-      uf: uf || null,
-      convidados_estimados: convidados,
-      orcamento_total_centavos: orcamento,
-    })
-    .eq("id", evento.id);
-  if (error) return { tipo: "erro", mensagem: mensagemDeErro(error, "Não foi possível salvar.") };
+  try {
+    await consultar(ctx, (trx) =>
+      trx
+        .updateTable("eventos")
+        .set({
+          nome_exibicao: nome,
+          data_status: data.data_status,
+          data: novaData,
+          horario_cerimonia: data.horario_cerimonia ?? null,
+          horario_festa: data.horario_festa ?? null,
+          cidade: texto(fd, "cidade") || null,
+          uf: uf || null,
+          convidados_estimados: convidados,
+          orcamento_total_centavos: orcamento,
+        })
+        .where("id", "=", evento.id)
+        .execute(),
+    );
+  } catch (e) {
+    return { tipo: "erro", mensagem: mensagemDeErro(e, "Não foi possível salvar.") };
+  }
 
   refresh();
   return { tipo: "salvo" };
@@ -83,8 +95,11 @@ export async function salvarMeuNome(_: EstadoForm, fd: FormData): Promise<Estado
   const ctx = await requireEvento();
   const nome = texto(fd, "nome");
   if (!nome) return { erro: "Informe seu nome." };
-  const { error } = await ctx.supabase.from("perfis").update({ nome }).eq("id", ctx.userId);
-  if (error) return { erro: mensagemDeErro(error) };
+  try {
+    await consultar(ctx, (trx) => trx.updateTable("perfis").set({ nome }).where("id", "=", ctx.userId).execute());
+  } catch (e) {
+    return { erro: mensagemDeErro(e) };
+  }
   refresh();
   return { ok: "Nome atualizado." };
 }
@@ -95,16 +110,20 @@ export async function convidarParceiro(_: EstadoForm, fd: FormData): Promise<Est
   if (!email.includes("@")) return { erro: "Informe um e-mail válido.", campos: { email } };
   if (email === ctx.email) return { erro: "Esse é o seu e-mail. Informe o do seu amor.", campos: { email } };
 
-  const { data, error } = await ctx.supabase
-    .from("convites_parceiro")
-    .insert({ evento_id: ctx.evento.id, email, convidado_por: ctx.userId })
-    .select("token")
-    .single();
-  if (error) {
+  let data: { token: string };
+  try {
+    data = await consultar(ctx, (trx) =>
+      trx
+        .insertInto("convites_parceiro")
+        .values({ evento_id: ctx.evento.id, email, convidado_por: ctx.userId })
+        .returning("token")
+        .executeTakeFirstOrThrow(),
+    );
+  } catch (e) {
     const msg =
-      error.code === "23505"
+      (e as { code?: string }).code === "23505"
         ? "Já existe um convite pendente. Cancele-o para enviar outro."
-        : mensagemDeErro(error, "Não foi possível criar o convite.");
+        : mensagemDeErro(e, "Não foi possível criar o convite.");
     return { erro: msg, campos: { email } };
   }
 
@@ -125,11 +144,16 @@ export async function convidarParceiro(_: EstadoForm, fd: FormData): Promise<Est
 
 export async function cancelarConvite(fd: FormData) {
   const ctx = await requireEvento();
-  await ctx.supabase
-    .from("convites_parceiro")
-    .update({ cancelado_em: new Date().toISOString() })
-    .eq("id", texto(fd, "id"))
-    .eq("evento_id", ctx.evento.id);
+  await semDerrubar("cancelarConvite", () =>
+    consultar(ctx, (trx) =>
+      trx
+        .updateTable("convites_parceiro")
+        .set({ cancelado_em: new Date().toISOString() })
+        .where("id", "=", texto(fd, "id"))
+        .where("evento_id", "=", ctx.evento.id)
+        .execute(),
+    ),
+  );
   refresh();
 }
 
@@ -145,22 +169,29 @@ export async function escolherPacote(_: EstadoForm, fd: FormData): Promise<Estad
 
   if (!pacote) {
     if (!atual) return {};
-    const { data, error } = await ctx.supabase.rpc("desativar_pacote", {
-      p_evento_id: ctx.evento.id,
-      p_pacote: atual,
-    });
-    if (error) return { erro: mensagemDeErro(error) };
-    refresh();
-    return { ok: resumoTroca(0, data ?? 0) };
+    try {
+      const { rows } = await consultar(ctx, (trx) =>
+        sql<{ removidas: number }>`select desativar_pacote(${ctx.evento.id}::uuid, ${atual}) as removidas`.execute(trx),
+      );
+      refresh();
+      return { ok: resumoTroca(0, rows[0]?.removidas ?? 0) };
+    } catch (e) {
+      return { erro: mensagemDeErro(e) };
+    }
   }
 
-  const { data, error } = await ctx.supabase.rpc("ativar_pacote", {
-    p_evento_id: ctx.evento.id,
-    p_pacote: pacote,
-  });
-  if (error || !data?.[0]) return { erro: mensagemDeErro(error) };
-  refresh();
-  return { ok: resumoTroca(data[0].criadas, data[0].removidas) };
+  try {
+    const { rows } = await consultar(ctx, (trx) =>
+      sql<{ criadas: number; removidas: number }>`
+        select criadas, removidas from ativar_pacote(${ctx.evento.id}::uuid, ${pacote})
+      `.execute(trx),
+    );
+    if (!rows[0]) return { erro: mensagemDeErro(null) };
+    refresh();
+    return { ok: resumoTroca(rows[0].criadas, rows[0].removidas) };
+  } catch (e) {
+    return { erro: mensagemDeErro(e) };
+  }
 }
 
 function resumoTroca(criadas: number, removidas: number): string {
