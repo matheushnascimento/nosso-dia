@@ -1,8 +1,8 @@
 /**
  * Guia do casamento civil e do regime de bens (M1 · #2).
  * CONTEÚDO INFORMATIVO A REVISAR por alguém com conhecimento jurídico antes da produção.
- * Base: Código Civil (Lei 10.406/2002) e Lei 6.015/1973 (arts. 57 e 67, redação da Lei 14.382/2022),
- * texto compilado do Planalto (25/11/2026). Pontos a revisar estão listados no PR da #2.
+ * Fontes oficiais no fim da página (Planalto, STF, CNJ), conferidas em 25–26/11/2026.
+ * Pontos a revisar estão listados no PR da #2.
  */
 export default function RegimeDeBens() {
   return (
@@ -92,32 +92,49 @@ export default function RegimeDeBens() {
 
       <h2>Casos especiais</h2>
       <p>
-        Em algumas situações a lei impõe a <strong>separação obrigatória de bens</strong>, por exemplo quando um
-        dos dois tem mais de 70 anos, quando alguém depende de autorização judicial para casar ou quando há uma
-        causa suspensiva (como a pessoa viúva que ainda não fez a partilha dos bens do casamento anterior). Há
-        decisões judiciais e exceções que mudam como essas regras se aplicam. Se for o caso de vocês, consultem o
-        cartório e um advogado antes de decidir.
+        O Código Civil impõe a <strong>separação obrigatória de bens</strong> em três situações:
       </p>
+      <ul>
+        <li>
+          <strong>Quem tem mais de 70 anos.</strong> Desde 2024, o Supremo Tribunal Federal decidiu que essa regra
+          pode ser afastada se o casal manifestar a vontade por escritura pública (Tema 1.236). Na prática, isso
+          se faz no tabelionato, como um pacto antenupcial.
+        </li>
+        <li>
+          <strong>Quem depende de autorização judicial para casar</strong> (por exemplo, quem tem 16 ou 17 anos e
+          precisa que o juiz supra a autorização que os pais negaram).
+        </li>
+        <li>
+          <strong>Quem casa sem respeitar uma causa suspensiva.</strong> Exemplos: a pessoa viúva que tem filhos do
+          cônjuge falecido e ainda não fez o inventário e a partilha; a pessoa divorciada cuja partilha de bens
+          ainda não foi homologada ou decidida. O juiz pode dispensar algumas dessas causas, se ficar provado que
+          ninguém é prejudicado.
+        </li>
+      </ul>
+      <p>Se for o caso de vocês, consultem o cartório e um advogado antes de decidir.</p>
 
       <h2>Civil no cartório ou religioso com efeito civil</h2>
       <ul>
         <li>
-          <strong>Civil no cartório:</strong> depois da habilitação, vocês marcam a cerimônia com o cartório. Ela pode
-          ser na sede do cartório ou em outro lugar, se o cartório fizer. Fora do cartório, em local particular,
-          são quatro testemunhas em vez de duas, e costuma haver taxa extra.
+          <strong>Civil no cartório:</strong> a habilitação é feita no cartório da residência de um de vocês, mas o
+          casamento pode ser celebrado em qualquer cartório de registro civil. A cerimônia pode ser na sede do
+          cartório ou em outro lugar, se a autoridade concordar. Fora do cartório, em local particular, as portas
+          ficam abertas e são quatro testemunhas em vez de duas. Perguntem ao cartório se há custo extra.
         </li>
         <li>
           <strong>Religioso com efeito civil:</strong> vocês fazem a habilitação no cartório do mesmo jeito e levam a
-          certidão para quem celebra. Depois da cerimônia, o casamento precisa ser registrado no cartório dentro do
-          prazo legal (o Código Civil fala em 90 dias). Fora do prazo, é preciso uma nova habilitação.
+          certidão para quem celebra. Depois da cerimônia, o casamento precisa ser registrado no cartório. O Código
+          Civil dá 90 dias para isso, mas a Lei de Registros Públicos ainda cita 30: registrem o quanto antes.
+          Passado o prazo, é preciso uma nova habilitação.
         </li>
         <li>
           <strong>Cerimônia com celebrante:</strong> não tem efeito civil. O civil é feito à parte, no cartório,
           antes ou depois.
         </li>
         <li>
-          <strong>Validade da habilitação:</strong> 90 dias a partir da emissão do certificado. O casamento (ou a
-          cerimônia religiosa com efeito civil) precisa acontecer dentro desse prazo.
+          <strong>Habilitação:</strong> com os documentos em ordem, o cartório publica o edital de proclamas em meio
+          eletrônico e emite o certificado em até 5 dias. Ele vale 90 dias: o casamento (ou a cerimônia religiosa
+          com efeito civil) precisa acontecer dentro desse prazo.
         </li>
       </ul>
 
@@ -133,6 +150,45 @@ export default function RegimeDeBens() {
         <li>Cartório de Registro Civil da cidade de vocês: documentos, taxas, prazos e a cerimônia.</li>
         <li>Tabelionato de notas: pacto antenupcial e o que pode constar nele.</li>
         <li>Um advogado de família, se houver patrimônio, empresa, filhos de relações anteriores ou um caso especial.</li>
+      </ul>
+
+      <h2>Fontes oficiais</h2>
+      <p>Textos consultados em novembro de 2026. As leis mudam: confiram sempre a versão atual.</p>
+      <ul>
+        <li>
+          <a href="https://www.planalto.gov.br/ccivil_03/leis/2002/l10406compilada.htm" target="_blank" rel="noopener noreferrer">
+            Código Civil (Lei nº 10.406/2002)
+          </a>
+          : regimes de bens (arts. 1.639 a 1.688), pacto antenupcial (arts. 1.653 a 1.657), separação obrigatória
+          (art. 1.641) e causas suspensivas (art. 1.523), habilitação e celebração (arts. 1.517 a 1.535), casamento
+          religioso com efeito civil (arts. 1.515 e 1.516), gratuidade (art. 1.512) e sobrenome (art. 1.565).
+        </li>
+        <li>
+          <a href="https://www.planalto.gov.br/ccivil_03/leis/l6015compilada.htm" target="_blank" rel="noopener noreferrer">
+            Lei de Registros Públicos (Lei nº 6.015/1973)
+          </a>
+          : habilitação, proclamas eletrônicos e certificado em até 5 dias (art. 67), registro do casamento
+          religioso (arts. 71 a 75) e mudança de sobrenome depois do casamento (art. 57).
+        </li>
+        <li>
+          <a href="https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/l14382.htm" target="_blank" rel="noopener noreferrer">
+            Lei nº 14.382/2022
+          </a>
+          , que modernizou os registros públicos (habilitação eletrônica, prazos e sobrenome).
+        </li>
+        <li>
+          <a href="https://portal.stf.jus.br/processos/detalhe.asp?incidente=6096433" target="_blank" rel="noopener noreferrer">
+            Supremo Tribunal Federal, ARE 1.309.642 (Tema 1.236)
+          </a>
+          : separação de bens para maiores de 70 anos pode ser afastada por escritura pública.
+        </li>
+        <li>
+          <a href="https://atos.cnj.jus.br/atos/detalhar/5243" target="_blank" rel="noopener noreferrer">
+            Conselho Nacional de Justiça, Provimento nº 149/2023
+          </a>
+          {" "}(Código Nacional de Normas do Foro Extrajudicial): regras nacionais para cartórios, como o edital de
+          proclamas eletrônico (art. 122).
+        </li>
       </ul>
     </>
   );

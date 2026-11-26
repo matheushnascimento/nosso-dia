@@ -5,10 +5,14 @@
 -- ou com celebrante). Substitui a tarefa do M0 `habilitacao_civil`.
 --
 -- CONTEÚDO INFORMATIVO, A REVISAR por alguém com conhecimento jurídico antes da produção.
--- Base conferida no texto compilado do Planalto em 25/11/2026:
---   Código Civil (Lei 10.406/2002) arts. 1.512, 1.516, 1.525, 1.532, 1.534, 1.565, 1.639–1.641,
---   1.653, 1.657; Lei 6.015/1973 (Registros Públicos) art. 67 § 1º, na redação da Lei 14.382/2022:
---   publicidade eletrônica da habilitação e certificado em até 5 dias.
+-- Fontes oficiais conferidas em 25–26/11/2026 (lista completa no guia /guias/regime-de-bens):
+--   Código Civil (Lei 10.406/2002), texto compilado do Planalto: arts. 1.512, 1.516, 1.523, 1.525,
+--     1.532, 1.534, 1.565, 1.639–1.641, 1.653, 1.657.
+--   Lei 6.015/1973 (Registros Públicos), compilada: art. 67 caput e § 1º (redação da Lei 14.382/2022):
+--     habilitação no cartório da residência de um dos noivos, publicidade eletrônica, certificado em
+--     até 5 dias, casamento em qualquer cartório; art. 73 (registro do religioso em 30 dias, cf. CC 1.516).
+--   Provimento CNJ 149/2023 (Código Nacional de Normas – Foro Extrajudicial), art. 122: edital de
+--     proclamas eletrônico.
 --
 -- Prazos (relativos à data do casamento):
 --   cv_habilitacao fica em D-75, e não em D-90 como na issue: com o certificado saindo em poucos
@@ -21,7 +25,7 @@ insert into public.pacotes (codigo, nome, descricao, automatico, ordem) values
 
 insert into public.tarefa_modelos (codigo, pacote, titulo, descricao, categoria, offset_dias, ordem, guia, substitui) values
   ('cv_cartorio', 'civil', 'Escolher o cartório e confirmar documentos e taxas',
-   'Cartório de Registro Civil (de pessoas naturais). Peçam a lista de documentos, as taxas e, se quiserem casar fora do cartório, se ele faz e quanto custa. Quem não pode pagar tem direito à gratuidade da habilitação, do registro e da primeira certidão.',
+   'A habilitação é feita no Cartório de Registro Civil da residência de um de vocês; a cerimônia pode ser em qualquer cartório de registro civil. Peçam a lista de documentos, as taxas e, se quiserem casar fora do cartório, se ele faz e quanto custa. A celebração é gratuita, e quem declara não poder pagar tem direito à gratuidade da habilitação, do registro e da primeira certidão.',
    'civil', -150, 185, 'regime-de-bens', '{}'),
   ('cv_regime', 'civil', 'Decidir o regime de bens',
    'Comunhão parcial é o padrão e não precisa de pacto. Qualquer outro regime exige pacto antenupcial em tabelionato, antes da habilitação. O guia explica cada um com um exemplo.',
@@ -33,13 +37,13 @@ insert into public.tarefa_modelos (codigo, pacote, titulo, descricao, categoria,
    'Na habilitação, duas pessoas maiores de idade, parentes ou não, declaram que conhecem vocês e que não há impedimento. Na cerimônia civil são pelo menos duas testemunhas, e quatro se for fora do cartório, em local particular (como o espaço da festa). Confirmem com o cartório se podem ser as mesmas.',
    'civil', -110, 188, null, '{}'),
   ('cv_habilitacao', 'civil', 'Dar entrada na habilitação do casamento',
-   'Atenção ao prazo: a habilitação vale 90 dias a partir da emissão do certificado, e o cartório costuma emiti-lo em poucos dias se os documentos estiverem em ordem. Cedo demais, ela vence antes do casamento; tarde demais, sobra pouco tempo para resolver pendências. Os dois vão juntos ao cartório (ou por procuração), com os documentos e, se houver, o pacto.',
+   'Atenção ao prazo: a habilitação vale 90 dias a partir da emissão do certificado, e a lei prevê que o cartório o emita em até 5 dias depois que a documentação estiver em ordem. Cedo demais, ela vence antes do casamento; tarde demais, sobra pouco tempo para resolver pendências. O pedido é assinado pelos dois (ou por procurador), com os documentos e, se houver, o pacto; a lei também permite enviar os documentos eletronicamente. Confirmem como o cartório de vocês faz.',
    'civil', -75, 190, 'regime-de-bens', '{habilitacao_civil}'),
   ('cv_certificado', 'civil', 'Acompanhar a habilitação e retirar o certificado',
-   'O cartório publica a habilitação em meio eletrônico e, sem impedimento, emite o certificado. Confiram a validade anotada nele: a data do casamento precisa caber nesses 90 dias. Se a data mudar, pode ser preciso uma nova habilitação.',
+   'O cartório publica o edital de proclamas eletrônico e, se não houver impedimento, emite o certificado. Confiram a validade anotada nele: a data do casamento precisa caber nesses 90 dias. Se a data mudar para depois disso, é preciso uma nova habilitação.',
    'civil', -65, 191, null, '{}'),
   ('cv_celebracao', 'civil', 'Agendar o civil ou o registro do religioso com efeito civil',
-   'Civil: marquem dia, hora e local com o cartório. Religioso com efeito civil: entreguem a certidão de habilitação ao celebrante; depois da cerimônia, o registro no cartório precisa ser pedido dentro do prazo legal (o Código Civil fala em 90 dias). Confirmem com o cartório e com a igreja quem leva o termo.',
+   'Civil: marquem dia, hora e local com o cartório. Religioso com efeito civil: entreguem a certidão de habilitação ao celebrante e, depois da cerimônia, peçam o registro no cartório o quanto antes (o Código Civil fala em 90 dias, mas a Lei de Registros Públicos ainda cita 30). Combinem com o cartório e com a igreja quem leva o termo.',
    'civil', -60, 192, 'regime-de-bens', '{}'),
   ('cv_pos', 'civil', 'Pedir a certidão de casamento e atualizar documentos',
    'Quem acrescentou o sobrenome do outro atualiza os documentos a partir da certidão.',
