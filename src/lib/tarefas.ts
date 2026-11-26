@@ -1,6 +1,6 @@
 import "server-only";
 import type { ContextoComEvento } from "@/lib/dal";
-import type { Views } from "@/lib/database.types";
+import type { Database } from "@/lib/database.types";
 import { ORDEM_GRUPO } from "@/lib/rotulos";
 
 /** Linha da view com os campos que o front usa, já sem os nulos da view. */
@@ -27,7 +27,10 @@ export type Tarefa = {
 
 export type Subitem = { id: string; tarefaId: string; texto: string; feito: boolean; doModelo: boolean; link: string | null };
 
-function normalizar(t: Views<"tarefas_com_prazo">): Tarefa {
+// Acesso direto ao tipo: funciona com os tipos escritos à mão e com os gerados (`npm run db:types`).
+type LinhaTarefa = Database["public"]["Views"]["tarefas_com_prazo"]["Row"];
+
+function normalizar(t: LinhaTarefa): Tarefa {
   return {
     id: t.id!,
     titulo: t.titulo ?? "",
