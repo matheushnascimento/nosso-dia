@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/tarefas", rotulo: "Tarefas" },
   { href: "/orcamento", rotulo: "Orçamento" },
   { href: "/fornecedores", rotulo: "Fornecedores" },
+  { href: "/estilo", rotulo: "Estilo" },
   { href: "/votos", rotulo: "Votos" },
   { href: "/configuracoes", rotulo: "Configurações" },
 ] as const;

@@ -130,10 +130,21 @@ export interface Perfis {
   nome: Generated<string>;
 }
 
+export interface Referencias {
+  categoria: string;
+  criado_em: Generated<string>;
+  criado_por: string | null;
+  evento_id: string;
+  id: Generated<string>;
+  nota: string | null;
+  url: string;
+}
+
 export interface Tags {
   ativo: Generated<boolean>;
   codigo: string;
   descricao: string | null;
+  grupo: string | null;
   nome: string;
   ordem: Generated<number>;
 }
@@ -240,6 +251,7 @@ export interface DB {
   orcamento_categorias: OrcamentoCategorias;
   pacotes: Pacotes;
   perfis: Perfis;
+  referencias: Referencias;
   tags: Tags;
   tarefa_modelo_subitens: TarefaModeloSubitens;
   tarefa_modelos: TarefaModelos;

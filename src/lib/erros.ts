@@ -31,6 +31,7 @@ const POR_CODIGO_AUTH: Record<string, string> = {
 const POR_CONSTRAINT: Record<string, string> = {
   fornecedores_contratado_com_valor: "Para marcar como contratado, informe o valor contratado.",
   fornecedores_categoria_check: "Escolha uma categoria da lista.",
+  referencias_url_check: "Só aceitamos links que começam com http:// ou https://",
 };
 
 type ErroBanco = { message?: string; hint?: string | null; code?: string | null; constraint_name?: string | null };
