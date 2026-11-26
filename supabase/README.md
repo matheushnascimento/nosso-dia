@@ -10,6 +10,7 @@
 | `20261125000004_m0_tarefa_modelos.sql` | Catálogo inicial de 24 tarefas |
 | `20261126000001_m1_pacotes.sql` | M1 #1: pacotes de checklist, subitens, guias, `ativar_pacote`/`desativar_pacote`, backfill |
 | `20261126000002_m1_cerimonia.sql` | M1 #3: grupo de escolha `cerimonia` (católica, evangélica, outra, celebrante, só civil) e `pacotes.conclui` |
+| `20261126000003_m1_aliancas_lua_de_mel_kit.sql` | M1 #4, #7, #8: pacotes automáticos `aliancas`, `lua_de_mel`, `dia_d`; marca edições anteriores ao M1 |
 
 ## Pacotes de checklist (M1)
 
@@ -76,5 +77,9 @@ PGHOST=localhost PGUSER=postgres supabase/testes/rodar.sh
 ```
 
 - Rodada A: todas as migrations e os testes do M0 (`10_testes.sql`), para pegar regressões.
-- Rodada B: migrations do M0, dados "antigos" (`15_dados_pre_m1.sql`), migrations do M1 e os testes do M1
-  (`20_testes_m1.sql`: backfill, absorção de modelos substituídos, escolha de pacotes, subitens, RLS).
+- Rodada B: M0, dados "antigos" (`15_dados_pre_m1.sql`), só a infra do M1 e `20_testes_m1.sql`
+  (backfill, absorção, escolha de pacotes, subitens, RLS, com pacotes fictícios).
+- Rodada C: M0, dados "antigos", todas as migrations e os testes de conteúdo
+  (`30_testes_cerimonia.sql`, `40_testes_aliancas_lua_de_mel_kit.sql`).
+
+Cada rodada usa um banco próprio. Uma migration de conteúdo nova ganha seu arquivo de testes na rodada C.

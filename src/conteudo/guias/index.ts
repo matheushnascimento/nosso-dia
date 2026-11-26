@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import ComoFuncionaOChecklist from "./como-funciona-o-checklist";
+import DocumentosDeViagem from "./documentos-de-viagem";
 
 /**
  * Guias estáticos do app, servidos em /guias/<slug>.
@@ -21,6 +22,13 @@ const GUIAS: Guia[] = [
     titulo: "Como funciona o checklist",
     resumo: "Prazos que se ajustam à data, o que é “Começar agora”, itens e checklists por escolha.",
     Conteudo: ComoFuncionaOChecklist,
+  },
+  {
+    slug: "documentos-de-viagem",
+    titulo: "Documentos de viagem",
+    resumo: "O que conferir antes da lua de mel (passaporte, visto, vacinas, seguro) e onde confirmar.",
+    informativo: true,
+    Conteudo: DocumentosDeViagem,
   },
 ];
 
