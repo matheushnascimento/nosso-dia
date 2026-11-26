@@ -36,12 +36,12 @@ export default async function PaginaGuia({ params }: PageProps<"/guias/[slug]">)
 
         {guia.informativo && (
           <p role="note" className="mt-6 rounded-xl bg-rose-claro px-4 py-3 text-sm">
-            Conteúdo informativo. Exigências e prazos podem variar; confirme com o órgão ou profissional responsável
-            na sua cidade.
+            {guia.aviso ??
+              "Conteúdo informativo. Exigências e prazos podem variar; confirme com o órgão ou profissional responsável na sua cidade."}
           </p>
         )}
 
-        <div className="mt-8 space-y-4 leading-relaxed [&_h2]:mt-10 [&_h2]:font-serif [&_h2]:text-2xl [&_h2]:font-medium [&_li]:ml-5 [&_li]:list-disc [&_ul]:space-y-1">
+        <div className="mt-8 space-y-4 leading-relaxed [&_h2]:mt-10 [&_h2]:font-serif [&_h2]:text-2xl [&_h2]:font-medium [&_li]:ml-5 [&_li]:list-disc [&_ul]:space-y-1 [&_a]:underline [&_a]:decoration-rose/50 [&_a]:underline-offset-4 [&_a:hover]:decoration-rose">
           <Conteudo />
         </div>
       </article>
