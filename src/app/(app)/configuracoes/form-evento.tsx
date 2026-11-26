@@ -78,7 +78,7 @@ export function FormEvento({ evento, hoje }: { evento: Evento; hoje: string }) {
         <Campo rotulo="Convidados (estimativa)">
           <Entrada name="convidados" type="number" min={1} max={5000} defaultValue={evento.convidados_estimados ?? ""} />
         </Campo>
-        <Campo rotulo="Orçamento total (R$)">
+        <Campo rotulo="Orçamento total (R$)" dica="A divisão por categoria fica em Orçamento.">
           <Entrada name="orcamento" inputMode="decimal" defaultValue={centavosParaTexto(evento.orcamento_total_centavos)} />
         </Campo>
       </div>

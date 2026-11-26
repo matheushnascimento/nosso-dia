@@ -7,6 +7,7 @@ import { BotaoLink, Cartao, Esqueleto, Subtitulo } from "@/components/ui";
 import { getMembros, requireEvento } from "@/lib/dal";
 import { dataPorExtenso, diasEntre, hojeSP, horario, mesPorExtenso } from "@/lib/datas";
 import { formatarBRL, pluralizar } from "@/lib/formato";
+import { carregarOrcamento } from "@/lib/orcamento-dados";
 import { listarPacotes } from "@/lib/pacotes";
 import { rotuloGrupoEscolha } from "@/lib/rotulos";
 import { listarTarefas } from "@/lib/tarefas";
@@ -24,8 +25,9 @@ export default function Painel({ searchParams }: PageProps<"/painel">) {
 
 function EsqueletoPainel() {
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      <Esqueleto className="h-48 md:col-span-3" />
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <Esqueleto className="h-48 md:col-span-2 lg:col-span-4" />
+      <Esqueleto className="h-32" />
       <Esqueleto className="h-32" />
       <Esqueleto className="h-32" />
       <Esqueleto className="h-32" />
@@ -41,7 +43,7 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/painel">["
     listarPacotes(ctx),
     searchParams,
   ]);
-  const votos = await statusVotos(ctx, membros);
+  const [votos, orcamento] = await Promise.all([statusVotos(ctx, membros), carregarOrcamento(ctx)]);
   // Decisões pendentes que destravam checklists (ex.: tipo de cerimônia)
   const decisoes = pacotes.escolhas.filter((g) => !g.escolhido);
   const { evento } = ctx;
@@ -100,7 +102,7 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/painel">["
         </div>
       </Cartao>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Cartao>
           <p className="text-sm text-tinta-suave">Progresso</p>
           <p className="mt-1 font-serif text-4xl">{progresso}%</p>
@@ -115,24 +117,44 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/painel">["
 
         <Cartao>
           <p className="text-sm text-tinta-suave">Orçamento</p>
-          {evento.orcamento_total_centavos ? (
+          {orcamento.total !== null ? (
             <>
-              <p className="mt-1 font-serif text-4xl">{formatarBRL(evento.orcamento_total_centavos, { semCentavos: true })}</p>
-              {evento.convidados_estimados && (
-                <p className="mt-2 text-sm text-tinta-suave">
-                  ≈ {formatarBRL(Math.round(evento.orcamento_total_centavos / evento.convidados_estimados), { semCentavos: true })}{" "}
-                  por convidado ({evento.convidados_estimados})
-                </p>
-              )}
+              <p className="mt-1 font-serif text-4xl">{formatarBRL(orcamento.total, { semCentavos: true })}</p>
+              <p className="mt-2 text-sm text-tinta-suave">
+                {formatarBRL(orcamento.contratado, { semCentavos: true })} contratado ·{" "}
+                <span className={orcamento.restante !== null && orcamento.restante < 0 ? "text-alerta" : undefined}>
+                  {formatarBRL(orcamento.restante ?? 0, { semCentavos: true })} restante
+                </span>
+              </p>
+              <Link href="/orcamento" className="mt-2 inline-block text-sm text-tinta-suave underline-offset-4 hover:text-tinta hover:underline">
+                {orcamento.distribuido ? "Ver por categoria →" : "Distribuir por categoria →"}
+              </Link>
             </>
           ) : (
             <p className="mt-2 text-sm">
               Ainda não definido.{" "}
-              <Link href="/configuracoes" className="underline underline-offset-4">
+              <Link href="/orcamento" className="underline underline-offset-4">
                 Definir orçamento
               </Link>
             </p>
           )}
+        </Cartao>
+
+        <Cartao>
+          <p className="text-sm text-tinta-suave">Fornecedores</p>
+          {orcamento.categoriasComOrcamento > 0 ? (
+            <>
+              <p className="mt-1 font-serif text-4xl">
+                {orcamento.categoriasContratadas} de {orcamento.categoriasComOrcamento}
+              </p>
+              <p className="mt-2 text-sm text-tinta-suave">categorias contratadas</p>
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-tinta-suave">Nenhum fornecedor ainda.</p>
+          )}
+          <Link href="/fornecedores" className="mt-2 inline-block text-sm text-tinta-suave underline-offset-4 hover:text-tinta hover:underline">
+            Ver fornecedores →
+          </Link>
         </Cartao>
 
         <Cartao>

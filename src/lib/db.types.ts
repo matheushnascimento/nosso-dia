@@ -91,6 +91,16 @@ export interface Membros {
   usuario_id: string;
 }
 
+export interface OrcamentoCategorias {
+  atualizado_em: Generated<string>;
+  categoria: string;
+  criado_em: Generated<string>;
+  evento_id: string;
+  id: Generated<string>;
+  planejado_centavos: Generated<number>;
+  prioridade: number | null;
+}
+
 export interface Pacotes {
   ativo: Generated<boolean>;
   automatico: Generated<boolean>;
@@ -210,6 +220,7 @@ export interface DB {
   eventos: Eventos;
   fornecedores: Fornecedores;
   membros: Membros;
+  orcamento_categorias: OrcamentoCategorias;
   pacotes: Pacotes;
   perfis: Perfis;
   tarefa_modelo_subitens: TarefaModeloSubitens;
