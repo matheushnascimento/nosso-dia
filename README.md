@@ -62,7 +62,7 @@ src/
   lib/
     dal.ts             Data Access Layer: único ponto que lê a sessão (getSessao, requireEvento…)
     supabase/server.ts cliente Supabase por requisição
-    database.types.ts  tipos do banco (regenerar com db:types)
+    database.types.ts  tipos do banco, gerados com `npm run db:types` (não editar à mão)
     tarefas.ts         leitura e ordenação das tarefas e dos subitens
     pacotes.ts         checklists ativos e grupos de escolha
     datas.ts           datas em America/Sao_Paulo
@@ -95,8 +95,8 @@ src/
 - **Server Actions sempre reautenticam** pela DAL e filtram por `evento_id`, além do RLS.
 - **Votos são privados de verdade.** Só o autor lê o texto (RLS); o parceiro vê apenas a situação, pela RPC
   `status_votos`, que nunca devolve o texto. A escrita é só pela RPC `salvar_votos`.
-- **`database.types.ts` foi escrito à mão** a partir das migrations. Rode `npm run db:types` assim que tiver o
-  Supabase local e faça commit do resultado.
+- **`database.types.ts` é gerado do banco.** Depois de criar ou mudar uma migration, rode
+  `npx supabase migration up` e `npm run db:types` e faça commit do arquivo junto com a migration.
 
 ## Testes do banco sem Docker
 
