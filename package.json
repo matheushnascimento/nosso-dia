@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
+    "test": "tsx --test \"src/**/*.test.ts\"",
     "db:start": "docker compose up -d --wait db",
     "db:stop": "docker compose stop db",
     "db:migrate": "node scripts/db.mjs migrar",

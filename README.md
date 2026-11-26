@@ -37,6 +37,7 @@ onboarding não respondem) e o login recusa o pedido por vir de uma origem desco
 | `npm run build` | Build de produção (exige as variáveis de `.env.example`) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | Gera tipos de rota e roda `tsc` |
+| `npm test` | Testes unitários (`src/**/*.test.ts`, com `node:test`) |
 | `npm run db:start` / `db:stop` | Sobe / para o Postgres local (Docker) |
 | `npm run db:migrate` / `db:status` | Aplica as migrations pendentes / mostra a situação |
 | `npm run db:reset` | Apaga e recria o banco **local** com todas as migrations |
@@ -96,6 +97,8 @@ src/
     tarefas.ts         leitura e ordenação das tarefas e dos subitens
     pacotes.ts         checklists ativos e grupos de escolha
     fornecedores.ts    leitura, ordenação e resumo dos fornecedores
+    orcamento.ts       categorias do orçamento, distribuição sugerida e prioridades (puro, com testes)
+    orcamento-dados.ts planejado × contratado × restante por categoria
     datas.ts           datas em America/Sao_Paulo
     formato.ts         dinheiro em centavos, parse de formulários
     rotulos.ts         categorias, grupos, UFs
@@ -113,6 +116,7 @@ src/
     (app)/tarefas/     T5 · lista agrupada, filtros, nova/editar/concluir/excluir
     (app)/configuracoes/ T6 · dados do casamento com prévia da mudança de data, convite, perfil
     (app)/votos/       votos de cada um: editor privado, salvamento automático, impressão
+    (app)/orcamento/   total, distribuição por categoria, prioridades e alertas de estouro
     (app)/fornecedores/ lista por categoria, cadastro, detalhe com as tarefas da categoria
 ```
 
@@ -135,6 +139,9 @@ src/
 - **Fornecedores dos dois.** Os parceiros leem e editam todos (RLS por `eh_membro`, como as tarefas). Categorias
   em `CATEGORIAS_FORNECEDOR` (`rotulos.ts`), conferidas também por um check no banco; "contratado" exige valor
   contratado (check `fornecedores_contratado_com_valor`).
+- **Orçamento: planejado gravado, contratado calculado.** `orcamento_categorias` guarda só o planejado e as
+  prioridades; o contratado é sempre a soma dos fornecedores `contratado`. A distribuição sugerida divide em reais
+  inteiros pelos maiores restos e põe os centavos na reserva, então a soma é sempre exatamente o total.
 - **Migrations são imutáveis depois de aplicadas.** Para mudar algo, crie uma migration nova; o `db:migrate`
   recusa rodar se uma já aplicada foi editada.
 - **Tipos gerados do banco** (`npm run db:types`): datas como `"YYYY-MM-DD"`, timestamps como texto ISO e
