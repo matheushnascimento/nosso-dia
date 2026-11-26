@@ -37,6 +37,7 @@ onboarding não respondem) e o login recusa o pedido por vir de uma origem desco
 | `npm run build` | Build de produção (exige as variáveis de `.env.example`) |
 | `npm run lint` | ESLint |
 | `npm run typecheck` | Gera tipos de rota e roda `tsc` |
+| `npm test` | Testes unitários (`src/**/*.test.ts`, com `node:test`) |
 | `npm run db:start` / `db:stop` | Sobe / para o Postgres local (Docker) |
 | `npm run db:migrate` / `db:status` | Aplica as migrations pendentes / mostra a situação |
 | `npm run db:reset` | Apaga e recria o banco **local** com todas as migrations |
@@ -63,8 +64,13 @@ Resend. Variáveis só no ambiente **Production**; os previews ficam sem banco e
 
 Nenhuma chave secreta vai em `NEXT_PUBLIC_*`: essas são embutidas no JavaScript do navegador.
 
-**Migrations não rodam no build**, de propósito (um preview nunca mexe no banco de produção). Antes do deploy
-que depende delas, rode da sua máquina com a conexão direta do Neon:
+**Migrations no deploy de produção.** O `npm run build` começa por `node scripts/db.mjs deploy`, que só age no
+deploy de produção da Vercel (`VERCEL_ENV=production`): aplica as migrations pendentes pela conexão direta
+(`DATABASE_URL_UNPOOLED`) antes do `next build`. Previews e builds locais nunca tocam no banco. Se uma migration
+falhar, o build falha e a versão anterior continua no ar. Por isso as migrations precisam ser compatíveis com o
+código que ainda está no ar durante o build (criar tabela ou coluna nova: sim; apagar ou renomear: em dois passos).
+
+Para aplicar à mão (por exemplo, antes de um merge), da sua máquina:
 
 ```bash
 MIGRATIONS_DATABASE_URL='<DATABASE_URL_UNPOOLED do Neon>' npm run db:migrate
@@ -74,9 +80,8 @@ O `db:migrate` é idempotente, trava contra execuções simultâneas e recusa mi
 editadas. Nunca rode `db:reset` nem os testes (`db:test:app`) contra produção.
 
 Para lançar o app num projeto da Vercel que está mostrando o placeholder:
-1. Aplique as migrations (acima).
-2. Configure as variáveis da tabela (Production) e remova `EM_CONSTRUCAO`, se existir.
-3. Faça um novo deploy. As `NEXT_PUBLIC_*` são embutidas no build, então só salvar as variáveis não basta.
+1. Configure as variáveis da tabela (Production) e remova `EM_CONSTRUCAO`, se existir.
+2. Faça um novo deploy (ele aplica as migrations). As `NEXT_PUBLIC_*` são embutidas no build, então só salvar as variáveis não basta.
 
 ## Estrutura
 
@@ -95,6 +100,9 @@ src/
     tipos.ts           tipos de linha usados pelas telas (Evento, Convite…)
     tarefas.ts         leitura e ordenação das tarefas e dos subitens
     pacotes.ts         checklists ativos e grupos de escolha
+    fornecedores.ts    leitura, ordenação e resumo dos fornecedores
+    orcamento.ts       categorias do orçamento, distribuição sugerida e prioridades (puro, com testes)
+    orcamento-dados.ts planejado × contratado × restante por categoria
     datas.ts           datas em America/Sao_Paulo
     formato.ts         dinheiro em centavos, parse de formulários
     rotulos.ts         categorias, grupos, UFs
@@ -112,6 +120,8 @@ src/
     (app)/tarefas/     T5 · lista agrupada, filtros, nova/editar/concluir/excluir
     (app)/configuracoes/ T6 · dados do casamento com prévia da mudança de data, convite, perfil
     (app)/votos/       votos de cada um: editor privado, salvamento automático, impressão
+    (app)/orcamento/   total, distribuição por categoria, prioridades e alertas de estouro
+    (app)/fornecedores/ lista por categoria, cadastro, detalhe com as tarefas da categoria
 ```
 
 ## Decisões que valem conhecer
@@ -130,6 +140,12 @@ src/
   copia cada conta para `auth.users`, que é o que o resto do banco usa.
 - **Votos são privados de verdade.** Só o autor lê o texto (RLS); o parceiro vê apenas a situação, pela RPC
   `status_votos`, que nunca devolve o texto. A escrita é só pela RPC `salvar_votos`.
+- **Fornecedores dos dois.** Os parceiros leem e editam todos (RLS por `eh_membro`, como as tarefas). Categorias
+  em `CATEGORIAS_FORNECEDOR` (`rotulos.ts`), conferidas também por um check no banco; "contratado" exige valor
+  contratado (check `fornecedores_contratado_com_valor`).
+- **Orçamento: planejado gravado, contratado calculado.** `orcamento_categorias` guarda só o planejado e as
+  prioridades; o contratado é sempre a soma dos fornecedores `contratado`. A distribuição sugerida divide em reais
+  inteiros pelos maiores restos e põe os centavos na reserva, então a soma é sempre exatamente o total.
 - **Migrations são imutáveis depois de aplicadas.** Para mudar algo, crie uma migration nova; o `db:migrate`
   recusa rodar se uma já aplicada foi editada.
 - **Tipos gerados do banco** (`npm run db:types`): datas como `"YYYY-MM-DD"`, timestamps como texto ISO e

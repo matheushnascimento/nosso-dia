@@ -5,6 +5,7 @@
  *   node scripts/db.mjs migrar    aplica, em ordem, as migrations de db/migrations ainda não aplicadas
  *   node scripts/db.mjs status    lista aplicadas e pendentes
  *   node scripts/db.mjs resetar   APAGA o banco e aplica tudo de novo (só em banco local)
+ *   node scripts/db.mjs deploy    no build da Vercel: aplica as pendentes só em produção (ver abaixo)
  *
  * Conexão: MIGRATIONS_DATABASE_URL, DATABASE_URL_UNPOOLED ou DATABASE_URL, nessa ordem
  * (no Neon, use a conexão direta, sem pooler). Lê .env.local se existir.
@@ -28,7 +29,30 @@ try {
   // sem .env.local: usa só o ambiente
 }
 
-const url = process.env.MIGRATIONS_DATABASE_URL ?? process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
+const comando = process.argv[2] ?? "migrar";
+
+/*
+ * `deploy` roda antes do `next build` (script "build" do package.json). Só faz algo no deploy de
+ * produção da Vercel (VERCEL_ENV=production): previews e builds locais nunca tocam no banco.
+ * Exige a conexão direta (DATABASE_URL_UNPOOLED, criada pela integração do Neon): pelo pooler,
+ * a trava contra dois deploys simultâneos não funciona. Se uma migration falhar, o build falha e
+ * a Vercel mantém a versão anterior no ar.
+ */
+if (comando === "deploy") {
+  if (process.env.VERCEL_ENV !== "production") {
+    console.log("[migrations] fora do deploy de produção da Vercel: nada a aplicar.");
+    process.exit(0);
+  }
+  if (!process.env.MIGRATIONS_DATABASE_URL && !process.env.DATABASE_URL_UNPOOLED) {
+    console.error("[migrations] defina DATABASE_URL_UNPOOLED (conexão direta do Neon) no ambiente Production.");
+    process.exit(1);
+  }
+}
+
+const url =
+  process.env.MIGRATIONS_DATABASE_URL ??
+  process.env.DATABASE_URL_UNPOOLED ??
+  (comando === "deploy" ? undefined : process.env.DATABASE_URL);
 if (!url) {
   console.error("Defina DATABASE_URL (veja .env.example).");
   process.exit(1);
@@ -135,8 +159,7 @@ async function resetar() {
   await migrar();
 }
 
-const comando = process.argv[2] ?? "migrar";
-const acoes = { migrar, status, resetar };
+const acoes = { migrar, status, resetar, deploy: migrar };
 if (!acoes[comando]) {
   console.error(`Comando desconhecido: ${comando}. Use migrar, status ou resetar.`);
   process.exit(1);

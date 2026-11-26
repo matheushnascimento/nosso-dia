@@ -25,13 +25,20 @@ const POR_CODIGO_AUTH: Record<string, string> = {
   INVALID_ORIGIN: "Não foi possível confirmar de onde veio o pedido. Recarregue a página e tente de novo.",
 };
 
-type ErroBanco = { message?: string; hint?: string | null; code?: string | null };
+/** Checks do banco com mensagem própria (postgres.js expõe o nome em `constraint_name`). */
+const POR_CONSTRAINT: Record<string, string> = {
+  fornecedores_contratado_com_valor: "Para marcar como contratado, informe o valor contratado.",
+  fornecedores_categoria_check: "Escolha uma categoria da lista.",
+};
+
+type ErroBanco = { message?: string; hint?: string | null; code?: string | null; constraint_name?: string | null };
 
 /** Erros do Postgres (lançados pelo driver): regras de negócio vêm com `hint`. */
 export function mensagemDeErro(e: unknown, padrao = "Algo deu errado. Tente de novo."): string {
   const erro = e as ErroBanco | null;
   if (!erro) return padrao;
   if (erro.hint && POR_HINT[erro.hint]) return POR_HINT[erro.hint];
+  if (erro.constraint_name && POR_CONSTRAINT[erro.constraint_name]) return POR_CONSTRAINT[erro.constraint_name];
   if (erro.code === "23505") return "Já existe um registro igual.";
   if (erro.code === "42501") return "Você não tem permissão para isso.";
   console.error("[nosso-dia] erro do banco:", erro.code ?? "", erro.message ?? e);
