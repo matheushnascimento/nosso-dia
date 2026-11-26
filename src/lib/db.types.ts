@@ -66,6 +66,13 @@ export interface Eventos {
   uf: string | null;
 }
 
+export interface EventoTags {
+  definida_em: Generated<string>;
+  definida_por: string | null;
+  evento_id: string;
+  tag: string;
+}
+
 export interface Fornecedores {
   atualizado_em: Generated<string>;
   categoria: string;
@@ -113,6 +120,7 @@ export interface Pacotes {
   grupo_escolha: string | null;
   nome: string;
   ordem: Generated<number>;
+  tag: string | null;
 }
 
 export interface Perfis {
@@ -120,6 +128,14 @@ export interface Perfis {
   criado_em: Generated<string>;
   id: string;
   nome: Generated<string>;
+}
+
+export interface Tags {
+  ativo: Generated<boolean>;
+  codigo: string;
+  descricao: string | null;
+  nome: string;
+  ordem: Generated<number>;
 }
 
 export interface TarefaModelos {
@@ -217,12 +233,14 @@ export interface Votos {
 export interface DB {
   convites_parceiro: ConvitesParceiro;
   evento_pacotes: EventoPacotes;
+  evento_tags: EventoTags;
   eventos: Eventos;
   fornecedores: Fornecedores;
   membros: Membros;
   orcamento_categorias: OrcamentoCategorias;
   pacotes: Pacotes;
   perfis: Perfis;
+  tags: Tags;
   tarefa_modelo_subitens: TarefaModeloSubitens;
   tarefa_modelos: TarefaModelos;
   tarefa_subitens: TarefaSubitens;
