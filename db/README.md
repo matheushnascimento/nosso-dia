@@ -46,6 +46,7 @@ commit;
 | `20261127000001_m2_fornecedores.sql` | M2 #17: `fornecedores` (funil, valores em centavos, `detalhes` jsonb), RLS dos membros |
 | `20261127000002_m2_orcamento.sql` | M2 #18: `orcamento_categorias` (planejado e prioridade por categoria) |
 | `20261127000003_m2_pacotes_por_tag.sql` | M2 #20: catálogo `tags`, `pacotes.tag`, `evento_tags`, `previa_tags`, `definir_tags` |
+| `20261127000004_m2_estilo.sql` | M2 #21: tags do questionário (`tags.grupo`), pacotes `ao_ar_livre`, `noite`, `destination`; `referencias` |
 
 ## Pacotes de checklist (M1)
 

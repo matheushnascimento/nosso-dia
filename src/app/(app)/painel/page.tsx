@@ -7,6 +7,7 @@ import { BotaoLink, Cartao, Esqueleto, Subtitulo } from "@/components/ui";
 import { getMembros, requireEvento } from "@/lib/dal";
 import { dataPorExtenso, diasEntre, hojeSP, horario, mesPorExtenso } from "@/lib/datas";
 import { formatarBRL, pluralizar } from "@/lib/formato";
+import { carregarEstilo } from "@/lib/estilo-dados";
 import { carregarOrcamento } from "@/lib/orcamento-dados";
 import { listarPacotes } from "@/lib/pacotes";
 import { rotuloGrupoEscolha } from "@/lib/rotulos";
@@ -43,7 +44,11 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/painel">["
     listarPacotes(ctx),
     searchParams,
   ]);
-  const [votos, orcamento] = await Promise.all([statusVotos(ctx, membros), carregarOrcamento(ctx)]);
+  const [votos, orcamento, estilo] = await Promise.all([
+    statusVotos(ctx, membros),
+    carregarOrcamento(ctx),
+    carregarEstilo(ctx),
+  ]);
   // Decisões pendentes que destravam checklists (ex.: tipo de cerimônia)
   const decisoes = pacotes.escolhas.filter((g) => !g.escolhido);
   const { evento } = ctx;
@@ -200,6 +205,21 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/painel">["
           />
         </Cartao>
       ))}
+
+      {!estilo.respondido && (
+        <Cartao className="flex flex-wrap items-center justify-between gap-4 border-rose/40">
+          <div>
+            <p className="mb-1 text-sm uppercase tracking-[0.2em] text-rose">Estilo e formato</p>
+            <p className="text-sm text-tinta-suave">
+              Contem como imaginam o casamento (formato, período, ao ar livre ou não). Algumas respostas trazem tarefas
+              próprias para o checklist.
+            </p>
+          </div>
+          <BotaoLink href="/estilo" variante="secundario">
+            Responder (1 minuto)
+          </BotaoLink>
+        </Cartao>
+      )}
 
       <Cartao>
         <div className="mb-3 flex items-baseline justify-between">
