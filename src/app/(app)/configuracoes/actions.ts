@@ -33,7 +33,7 @@ export async function salvarEvento(fd: FormData): Promise<ResultadoEvento> {
   const nome = texto(fd, "nome_exibicao");
   if (!nome) return { tipo: "erro", mensagem: "Dê um nome para o casamento." };
 
-  const data = lerData(fd);
+  const data = lerData(fd, evento);
   if ("erro" in data) return { tipo: "erro", mensagem: data.erro };
 
   const uf = texto(fd, "uf").toUpperCase();

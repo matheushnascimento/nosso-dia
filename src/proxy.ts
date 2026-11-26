@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/database.types";
-import { emConstrucao, supabaseEnv } from "@/lib/env";
+import { emConstrucao, motivoEmConstrucao, supabaseEnv } from "@/lib/env";
 
 /** Rotas que exigem login. */
 const PROTEGIDAS = ["/painel", "/tarefas", "/configuracoes", "/onboarding", "/nova-senha"];
@@ -19,6 +19,7 @@ function casa(path: string, prefixos: string[]) {
 export async function proxy(request: NextRequest) {
   // Modo "em construção": toda página mostra o placeholder estático (public/em-construcao.html).
   if (emConstrucao()) {
+    avisarEmDesenvolvimento();
     const url = request.nextUrl.clone();
     url.pathname = "/em-construcao.html";
     url.search = "";
@@ -74,6 +75,14 @@ export async function proxy(request: NextRequest) {
   }
 
   return response;
+}
+
+let avisado = false;
+/** Em `next dev`, explica no terminal por que só aparece a página em construção. */
+function avisarEmDesenvolvimento() {
+  if (avisado || process.env.NODE_ENV === "production") return;
+  avisado = true;
+  console.warn(`[nosso-dia] Mostrando a página "em construção": ${motivoEmConstrucao()}`);
 }
 
 export const config = {

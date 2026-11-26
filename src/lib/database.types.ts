@@ -188,6 +188,7 @@ export type Database = {
           pacote: string;
           guia: string | null;
           substitui: string[];
+          por_parceiro: boolean;
         };
         Insert: {
           id?: string;
@@ -202,6 +203,7 @@ export type Database = {
           pacote?: string;
           guia?: string | null;
           substitui?: string[];
+          por_parceiro?: boolean;
         };
         Update: {
           id?: string;
@@ -216,6 +218,7 @@ export type Database = {
           pacote?: string;
           guia?: string | null;
           substitui?: string[];
+          por_parceiro?: boolean;
         };
         Relationships: [];
       };
@@ -237,6 +240,7 @@ export type Database = {
           criado_em: string;
           atualizado_em: string;
           editada: boolean;
+          parceiro: string | null;
         };
         Insert: {
           id?: string;
@@ -255,6 +259,7 @@ export type Database = {
           criado_em?: string;
           atualizado_em?: string;
           editada?: boolean;
+          parceiro?: string | null;
         };
         Update: {
           id?: string;
@@ -273,6 +278,7 @@ export type Database = {
           criado_em?: string;
           atualizado_em?: string;
           editada?: boolean;
+          parceiro?: string | null;
         };
         Relationships: [
           {

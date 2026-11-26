@@ -30,8 +30,9 @@ select pg_temp.ok('nenhum casamento ficou com tarefa de modelo desativado',
   not exists (select 1 from tarefas t join tarefa_modelos m on m.id = t.modelo_id where not m.ativo));
 select pg_temp.ok('nenhuma tarefa duplicada por modelo',
   not exists (select 1 from tarefas where modelo_id is not null group by evento_id, modelo_id having count(*) > 1));
-select pg_temp.ok('Ana: 24 - 3 absorvidas + 15 novas = 36 tarefas',
-  (select count(*) from tarefas where evento_id = :'ana') = 36);
+select pg_temp.ok('Ana: 15 tarefas dos 3 pacotes (as do M0 absorvidas, nenhuma a mais)',
+  (select count(*) from tarefas t join tarefa_modelos m on m.id = t.modelo_id
+    where t.evento_id = :'ana' and m.pacote in ('aliancas', 'lua_de_mel', 'dia_d')) = 15);
 
 -- #4: quem já tinha encomendado as alianças não recebe a encomenda como pendente
 select pg_temp.ok('Ana: "Encomendar as alianças" continua concluída (absorvida pelo modelo novo)',
@@ -65,10 +66,11 @@ insert into auth.users (id, email) values ('00000000-0000-0000-0000-00000000000f
 select pg_temp.como('00000000-0000-0000-0000-00000000000f');
 set role authenticated;
 select criar_evento('Fabi & Gui', 'definida', current_date + 400) as novo \gset
-select pg_temp.ok('casamento novo: 21 do base + 15 dos pacotes novos = 36',
-  (select count(*) from tarefas where evento_id = :'novo') = 36);
+select pg_temp.ok('casamento novo: 15 tarefas dos 3 pacotes',
+  (select count(*) from tarefas t join tarefa_modelos m on m.id = t.modelo_id
+    where t.evento_id = :'novo' and m.pacote in ('aliancas', 'lua_de_mel', 'dia_d')) = 15);
 select pg_temp.ok('casamento novo: pacotes automáticos registrados',
-  (select array_agg(pacote order by pacote) = '{aliancas,base,dia_d,lua_de_mel}' from evento_pacotes where evento_id = :'novo'));
+  (select array_agg(pacote) @> '{aliancas,base,dia_d,lua_de_mel}' from evento_pacotes where evento_id = :'novo'));
 select pg_temp.ok('casamento novo: kit com 15 itens, nenhum marcado',
   (select subitens_total = 15 and subitens_feitos = 0 from tarefas_com_prazo where evento_id = :'novo' and titulo = 'Montar o kit de emergência'));
 

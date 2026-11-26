@@ -16,8 +16,11 @@ const OPCOES: { valor: Enums<"data_status">; rotulo: string }[] = [
  */
 export function CamposData({
   inicial,
+  hoje,
   onChange,
 }: {
+  /** Hoje (YYYY-MM-DD, America/Sao_Paulo): bloqueia datas no passado no seletor. */
+  hoje: string;
   inicial?: {
     data_status: Enums<"data_status">;
     data: string | null;
@@ -27,6 +30,11 @@ export function CamposData({
   onChange?: () => void;
 }) {
   const [status, setStatus] = useState<Enums<"data_status">>(inicial?.data_status ?? "definida");
+  // A data já salva continua válida mesmo que tenha passado (o casamento aconteceu).
+  const dataSalva = inicial?.data_status === "definida" ? (inicial.data ?? "") : "";
+  const mesSalvo = inicial?.data_status === "mes_estimado" ? (inicial.data?.slice(0, 7) ?? "") : "";
+  const minData = dataSalva && dataSalva < hoje ? dataSalva : hoje;
+  const minMes = mesSalvo && mesSalvo < hoje.slice(0, 7) ? mesSalvo : hoje.slice(0, 7);
 
   return (
     <div className="flex flex-col gap-4" onChange={onChange}>
@@ -60,7 +68,8 @@ export function CamposData({
               type="date"
               name="data"
               required
-              defaultValue={inicial?.data_status === "definida" ? (inicial.data ?? "") : ""}
+              min={minData}
+              defaultValue={dataSalva}
             />
           </Campo>
           <div className="grid grid-cols-2 gap-3">
@@ -80,7 +89,8 @@ export function CamposData({
             type="month"
             name="mes"
             required
-            defaultValue={inicial?.data_status === "mes_estimado" ? (inicial.data?.slice(0, 7) ?? "") : ""}
+            min={minMes}
+            defaultValue={mesSalvo}
           />
         </Campo>
       )}

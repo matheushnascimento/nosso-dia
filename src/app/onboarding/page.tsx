@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Esqueleto, Logo } from "@/components/ui";
 import { getContexto } from "@/lib/dal";
+import { hojeSP } from "@/lib/datas";
 import { FormOnboarding } from "./form-onboarding";
 
 export const metadata: Metadata = { title: "Vamos começar" };
@@ -23,5 +24,5 @@ export default function Onboarding() {
 async function Conteudo() {
   const ctx = await getContexto();
   if (ctx.evento) redirect("/painel");
-  return <FormOnboarding meuNome={ctx.nome} />;
+  return <FormOnboarding meuNome={ctx.nome} hoje={hojeSP()} />;
 }

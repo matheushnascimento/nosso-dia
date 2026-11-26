@@ -22,6 +22,9 @@ grant execute on function pg_temp.espera_erro(text,text) to authenticated, anon;
 -- (24 no M0; cresce com as migrations de conteúdo do M1).
 select count(*) as n_tarefas from tarefa_modelos m join pacotes p on p.codigo = m.pacote
  where m.ativo and p.automatico and p.ativo \gset
+-- Modelos por parceiro (trajes) ganham uma cópia a mais quando o 2º parceiro entra.
+select count(*) as n_por_parceiro from tarefa_modelos m join pacotes p on p.codigo = m.pacote
+ where m.ativo and m.por_parceiro and p.automatico and p.ativo \gset
 select pg_temp.como('00000000-0000-0000-0000-00000000000a','ana@x.com');
 set role authenticated;
 select criar_evento('  Ana & Bruno ', 'definida', current_date + 120, '16:00', '18:00', 'Holambra', 'sp', 120, 4500000) as evento \gset
@@ -68,7 +71,7 @@ select pg_temp.como('00000000-0000-0000-0000-00000000000b','bruno@x.com');
 set role authenticated;
 select 'Bruno aceita convite' as teste, aceitar_convite(:'token_bruno') = :'evento' as ok;
 select 'Bruno vê as mesmas tarefas e o nome da Ana' as teste,
-  (select count(*) from tarefas_com_prazo) = :n_tarefas + 1 and (select count(*) from perfis) = 2 as ok;
+  (select count(*) from tarefas_com_prazo) = :n_tarefas + 1 + :n_por_parceiro and (select count(*) from perfis) = 2 as ok;
 select 'token não reutiliza' as teste, pg_temp.espera_erro(format($$select aceitar_convite(%L)$$, :'token_bruno'), 'inválido') as ok;
 update tarefas set status = 'concluida' where titulo = 'Contratar o espaço';
 select 'conclusão registra quem concluiu' as teste, concluida_por = '00000000-0000-0000-0000-00000000000b' and concluida_em is not null and grupo = 'concluidas' as ok
@@ -108,7 +111,10 @@ reset role;
 -- ===== 'atrasadas' só para tarefa que já estava no evento antes de vencer
 update tarefas set criado_em = now() - interval '60 days' where titulo = 'Montar o kit do dia D';
 set role authenticated;
+-- simula a passagem do tempo: a regra "data no passado" só vale para quem edita pelo app
+select set_config('nosso_dia.sistema', '1', false) \g /dev/null
 update eventos set data_status = 'definida', data = current_date - 10 where id = :'evento';  -- kit D-3 venceu há 13 dias
+select set_config('nosso_dia.sistema', '', false) \g /dev/null
 select 'tarefa antiga vencida = atrasada; nova vencida = começar agora' as teste,
   (select grupo from tarefas_com_prazo where titulo='Montar o kit do dia D') = 'atrasadas'
   and (select grupo from tarefas_com_prazo where titulo='Reconfirmar todos os fornecedores') = 'comecar_agora' as ok;

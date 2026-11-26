@@ -13,7 +13,7 @@ function centavosParaTexto(c: number | null) {
   return (c / 100).toLocaleString("pt-BR", { minimumFractionDigits: c % 100 ? 2 : 0 });
 }
 
-export function FormEvento({ evento }: { evento: Tables<"eventos"> }) {
+export function FormEvento({ evento, hoje }: { evento: Tables<"eventos">; hoje: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [pendente, iniciar] = useTransition();
   const [previa, setPrevia] = useState<Previa | null>(null);
@@ -57,7 +57,7 @@ export function FormEvento({ evento }: { evento: Tables<"eventos"> }) {
 
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">Data</span>
-        <CamposData inicial={evento} />
+        <CamposData inicial={evento} hoje={hoje} />
       </div>
 
       <div className="grid grid-cols-[1fr_6rem] gap-3">

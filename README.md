@@ -25,6 +25,11 @@ Com o Supabase local, os e-mails de confirmação caem no Inbucket/Mailpit (`npx
 Para não precisar confirmar e-mail em desenvolvimento, desligue *Confirm email* em `config.toml`
 (`[auth.email] enable_confirmations = false`).
 
+Abrindo o `npm run dev` **de outro computador** (pelo IP ou nome da máquina)? Ponha esse endereço em
+`DEV_ORIGINS` no `.env.local` (ex.: `DEV_ORIGINS=192.168.0.10`) e em `NEXT_PUBLIC_SITE_URL`. Sem isso, o
+servidor de desenvolvimento bloqueia os próprios scripts: a página carrega, mas botões como o
+"Continuar" do onboarding não respondem.
+
 ### Scripts
 
 | Script | O que faz |
