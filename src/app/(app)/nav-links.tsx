@@ -7,6 +7,7 @@ import { cx } from "@/components/ui";
 const LINKS = [
   { href: "/painel", rotulo: "Painel" },
   { href: "/tarefas", rotulo: "Tarefas" },
+  { href: "/votos", rotulo: "Votos" },
   { href: "/configuracoes", rotulo: "Configurações" },
 ] as const;
 

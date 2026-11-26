@@ -8,7 +8,7 @@ import { NavLinks } from "./nav-links";
 export default function LayoutApp({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-linha bg-papel/90 backdrop-blur">
+      <header className="print:hidden border-b border-linha bg-papel/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4 sm:px-6">
           <Link href="/painel">
             <Logo />

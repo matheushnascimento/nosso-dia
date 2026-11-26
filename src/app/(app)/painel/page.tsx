@@ -10,6 +10,7 @@ import { formatarBRL, pluralizar } from "@/lib/formato";
 import { listarPacotes } from "@/lib/pacotes";
 import { rotuloGrupoEscolha } from "@/lib/rotulos";
 import { listarTarefas } from "@/lib/tarefas";
+import { ROTULO_SITUACAO, statusVotos } from "@/lib/votos";
 
 export const metadata: Metadata = { title: "Painel" };
 
@@ -40,6 +41,7 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/painel">["
     listarPacotes(ctx),
     searchParams,
   ]);
+  const votos = await statusVotos(ctx, membros);
   // Decisões pendentes que destravam checklists (ex.: tipo de cerimônia)
   const decisoes = pacotes.escolhas.filter((g) => !g.escolhido);
   const { evento } = ctx;
@@ -148,6 +150,17 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/painel">["
               Convidar meu amor
             </BotaoLink>
           )}
+          <p className="mt-3 border-t border-linha pt-3 text-sm text-tinta-suave">
+            <Link href="/votos" className="hover:text-tinta">
+              {votos.map((v, i) => (
+                <span key={v.membro.usuarioId}>
+                  {i > 0 && " · "}
+                  {v.membro.souEu ? "Seus votos" : "Votos do seu amor"}:{" "}
+                  <span className={v.situacao === "prontos" ? "text-salvia" : undefined}>{ROTULO_SITUACAO[v.situacao]}</span>
+                </span>
+              ))}
+            </Link>
+          </p>
         </Cartao>
       </div>
 

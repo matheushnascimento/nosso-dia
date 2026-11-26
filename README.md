@@ -18,17 +18,17 @@ npm run db:types        # regenera src/lib/database.types.ts a partir do banco
 npm run dev
 ```
 
-Na primeira vez, rode `npx supabase init` antes do `db:start` para criar `supabase/config.toml`
-(a pasta `supabase/migrations` já existe e é mantida).
-
-Com o Supabase local, os e-mails de confirmação caem no Inbucket/Mailpit (`npx supabase status` mostra a URL).
-Para não precisar confirmar e-mail em desenvolvimento, desligue *Confirm email* em `config.toml`
-(`[auth.email] enable_confirmations = false`).
+A configuração do Supabase local está em `supabase/config.toml` (não rode `supabase init`).
+Os e-mails de confirmação e de nova senha caem no Mailpit (`npx supabase status` mostra a URL), e a
+confirmação de e-mail vem desligada para desenvolvimento.
 
 Abrindo o `npm run dev` **de outro computador** (pelo IP ou nome da máquina)? Ponha esse endereço em
 `DEV_ORIGINS` no `.env.local` (ex.: `DEV_ORIGINS=192.168.0.10`) e em `NEXT_PUBLIC_SITE_URL`. Sem isso, o
 servidor de desenvolvimento bloqueia os próprios scripts: a página carrega, mas botões como o
 "Continuar" do onboarding não respondem.
+Para os links dos e-mails (nova senha, confirmação) também funcionarem de lá, troque em
+`supabase/config.toml` o `external_url` (ex.: `http://homeserver:54321`) e o `site_url`
+(ex.: `http://homeserver:3000`) e reinicie com `npx supabase stop && npx supabase start`.
 
 ### Scripts
 
@@ -81,6 +81,7 @@ src/
     (app)/painel/      T4 · contagem regressiva, progresso, orçamento, próximas tarefas
     (app)/tarefas/     T5 · lista agrupada, filtros, nova/editar/concluir/excluir
     (app)/configuracoes/ T6 · dados do casamento com prévia da mudança de data, convite, perfil
+    (app)/votos/       votos de cada um: editor privado, salvamento automático, impressão
 ```
 
 ## Decisões que valem conhecer
@@ -92,6 +93,8 @@ src/
 - **Cache Components está ligado.** Toda leitura de sessão fica dentro de `<Suspense>`; o casco das páginas
   é pré-renderizado e o conteúdo do casal chega por streaming. Nada do casal é cacheado no servidor.
 - **Server Actions sempre reautenticam** pela DAL e filtram por `evento_id`, além do RLS.
+- **Votos são privados de verdade.** Só o autor lê o texto (RLS); o parceiro vê apenas a situação, pela RPC
+  `status_votos`, que nunca devolve o texto. A escrita é só pela RPC `salvar_votos`.
 - **`database.types.ts` foi escrito à mão** a partir das migrations. Rode `npm run db:types` assim que tiver o
   Supabase local e faça commit do resultado.
 

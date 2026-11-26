@@ -4,7 +4,7 @@ import type { Database } from "@/lib/database.types";
 import { emConstrucao, motivoEmConstrucao, supabaseEnv } from "@/lib/env";
 
 /** Rotas que exigem login. */
-const PROTEGIDAS = ["/painel", "/tarefas", "/configuracoes", "/onboarding", "/nova-senha"];
+const PROTEGIDAS = ["/painel", "/tarefas", "/configuracoes", "/votos", "/onboarding", "/nova-senha"];
 /** Rotas que um usuário logado não precisa ver. */
 const SO_DESLOGADO = ["/", "/entrar", "/cadastrar"];
 

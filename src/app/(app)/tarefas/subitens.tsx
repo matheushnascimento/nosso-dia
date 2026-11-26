@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cx } from "@/components/ui";
 import type { Subitem } from "@/lib/tarefas";
 import { adicionarSubitem, alternarSubitem, excluirSubitem } from "./actions";
@@ -27,7 +28,14 @@ export function ListaSubitens({ tarefaId, subitens }: { tarefaId: string; subite
                   )}
                 </button>
               </form>
-              <span className={cx("flex-1", s.feito && "text-tinta-suave line-through")}>{s.texto}</span>
+              <span className={cx("flex-1", s.feito && "text-tinta-suave line-through")}>
+                {s.texto}
+                {s.link && (
+                  <Link href={s.link} className="ml-2 text-xs text-rose no-underline hover:underline">
+                    abrir →
+                  </Link>
+                )}
+              </span>
               <form action={excluirSubitem} className="flex">
                 <input type="hidden" name="id" value={s.id} />
                 <button

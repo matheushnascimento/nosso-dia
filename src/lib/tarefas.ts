@@ -25,7 +25,7 @@ export type Tarefa = {
   subitensFeitos: number;
 };
 
-export type Subitem = { id: string; tarefaId: string; texto: string; feito: boolean; doModelo: boolean };
+export type Subitem = { id: string; tarefaId: string; texto: string; feito: boolean; doModelo: boolean; link: string | null };
 
 function normalizar(t: Views<"tarefas_com_prazo">): Tarefa {
   return {
@@ -78,16 +78,28 @@ export async function listarSubitens(
 ): Promise<Map<string, Subitem[]>> {
   const mapa = new Map<string, Subitem[]>();
   if (!tarefaIds.length) return mapa;
-  const { data, error } = await ctx.supabase
-    .from("tarefa_subitens")
-    .select("id, tarefa_id, texto, feito, modelo_subitem_id")
-    .in("tarefa_id", tarefaIds)
-    .order("ordem")
-    .order("criado_em");
-  if (error) throw new Error(`Erro ao carregar itens: ${error.message}`);
+  const [{ data, error }, { data: links, error: erroLinks }] = await Promise.all([
+    ctx.supabase
+      .from("tarefa_subitens")
+      .select("id, tarefa_id, texto, feito, modelo_subitem_id")
+      .in("tarefa_id", tarefaIds)
+      .order("ordem")
+      .order("criado_em"),
+    // poucos itens do catálogo têm link (ex.: "Votos impressos" → /votos)
+    ctx.supabase.from("tarefa_modelo_subitens").select("id, link").not("link", "is", null),
+  ]);
+  if (error || erroLinks) throw new Error(`Erro ao carregar itens: ${(error ?? erroLinks)!.message}`);
+  const linkPorModelo = new Map((links ?? []).map((l) => [l.id, l.link]));
   for (const s of data ?? []) {
     const lista = mapa.get(s.tarefa_id) ?? [];
-    lista.push({ id: s.id, tarefaId: s.tarefa_id, texto: s.texto, feito: s.feito, doModelo: Boolean(s.modelo_subitem_id) });
+    lista.push({
+      id: s.id,
+      tarefaId: s.tarefa_id,
+      texto: s.texto,
+      feito: s.feito,
+      doModelo: Boolean(s.modelo_subitem_id),
+      link: (s.modelo_subitem_id && linkPorModelo.get(s.modelo_subitem_id)) || null,
+    });
     mapa.set(s.tarefa_id, lista);
   }
   return mapa;
