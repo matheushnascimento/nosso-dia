@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Cartao, Entrada, Esqueleto, Selecao, Selo, Titulo, cx } from "@/components/ui";
+import { BotaoLink, Cartao, Entrada, Esqueleto, Selecao, Selo, Titulo, cx } from "@/components/ui";
 import {
   CONFIRMACOES,
   FAIXAS,
@@ -33,7 +33,12 @@ export default function PaginaConvidados({ searchParams }: PageProps<"/convidado
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Titulo>Convidados</Titulo>
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <Titulo>Convidados</Titulo>
+          <BotaoLink href="/convidados/importar" variante="secundario">
+            Importar planilha
+          </BotaoLink>
+        </div>
         <p className="mt-2 max-w-2xl text-tinta-suave">
           A lista de vocês dois, por convite: quem vem junto fica no mesmo convite. Por enquanto, as confirmações são
           marcadas aqui, à mão.
@@ -83,8 +88,12 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/convidados
           <Cartao>
             <p className="font-serif text-xl">Nenhum convidado ainda</p>
             <p className="mt-2 text-tinta-suave">
-              Comecem pelo cadastro rápido ao lado: um nome por linha, e quem vem junto fica no mesmo convite. A
-              importação de planilha chega em breve.
+              Comecem pelo cadastro rápido: um nome por linha, e quem vem junto fica no mesmo convite. Se a lista já
+              está numa planilha,{" "}
+              <Link href="/convidados/importar" className="underline underline-offset-4 hover:text-tinta">
+                importem de uma vez
+              </Link>
+              .
             </p>
           </Cartao>
         ) : visiveis.length === 0 ? (
