@@ -98,6 +98,17 @@ export interface Membros {
   usuario_id: string;
 }
 
+export interface Musicas {
+  artista: string | null;
+  criado_em: Generated<string>;
+  evento_id: string;
+  id: Generated<string>;
+  link: string | null;
+  momento: string;
+  ordem: Generated<number>;
+  titulo: string;
+}
+
 export interface OrcamentoCategorias {
   atualizado_em: Generated<string>;
   categoria: string;
@@ -248,6 +259,7 @@ export interface DB {
   eventos: Eventos;
   fornecedores: Fornecedores;
   membros: Membros;
+  musicas: Musicas;
   orcamento_categorias: OrcamentoCategorias;
   pacotes: Pacotes;
   perfis: Perfis;

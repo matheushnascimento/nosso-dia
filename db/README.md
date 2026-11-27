@@ -49,6 +49,7 @@ commit;
 | `20261127000004_m2_estilo.sql` | M2 #21: tags do questionário (`tags.grupo`), pacotes `ao_ar_livre`, `noite`, `destination`; `referencias` |
 | `20261127000005_m2_espaco_buffet.sql` | M2 #22: pacotes automáticos `espaco` e `buffet`; absorvem `pesquisar_espaco`, `contratar_espaco`, `contratar_buffet` |
 | `20261127000006_m2_bebidas_foto_decoracao.sql` | M2 #23: pacotes automáticos `bebidas`, `foto_video`, `decoracao`; absorvem `contratar_foto`, `contratar_decoracao` |
+| `20261127000007_m2_musica_assessoria.sql` | M2 #24: pacotes automáticos `musica`, `assessoria` (absorvem `contratar_musica`, `decidir_assessoria`); tabela `musicas` (setlist) |
 
 ## Pacotes de checklist (M1)
 
