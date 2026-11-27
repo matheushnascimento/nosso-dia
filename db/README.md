@@ -48,6 +48,7 @@ commit;
 | `20261127000003_m2_pacotes_por_tag.sql` | M2 #20: catálogo `tags`, `pacotes.tag`, `evento_tags`, `previa_tags`, `definir_tags` |
 | `20261127000004_m2_estilo.sql` | M2 #21: tags do questionário (`tags.grupo`), pacotes `ao_ar_livre`, `noite`, `destination`; `referencias` |
 | `20261127000005_m2_espaco_buffet.sql` | M2 #22: pacotes automáticos `espaco` e `buffet`; absorvem `pesquisar_espaco`, `contratar_espaco`, `contratar_buffet` |
+| `20261127000006_m2_bebidas_foto_decoracao.sql` | M2 #23: pacotes automáticos `bebidas`, `foto_video`, `decoracao`; absorvem `contratar_foto`, `contratar_decoracao` |
 
 ## Pacotes de checklist (M1)
 
