@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/orcamento", rotulo: "Orçamento" },
   { href: "/fornecedores", rotulo: "Fornecedores" },
   { href: "/estilo", rotulo: "Estilo" },
+  { href: "/musica", rotulo: "Música" },
   { href: "/votos", rotulo: "Votos" },
   { href: "/configuracoes", rotulo: "Configurações" },
 ] as const;

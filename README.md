@@ -102,6 +102,8 @@ src/
     pacotes.ts         checklists ativos e grupos de escolha
     fornecedores.ts    leitura, ordenação e resumo dos fornecedores
     campos-fornecedor/ campos próprios de cada categoria (um módulo por categoria), validação e resumo
+    musica.ts          momentos da setlist
+    musica-dados.ts    setlist do casal por momento
     estilo.ts          perguntas do questionário de estilo e formato, respostas ↔ tags (puro, com testes)
     estilo-dados.ts    catálogo de tags, respostas do casal e referências
     orcamento.ts       categorias do orçamento, distribuição sugerida e prioridades (puro, com testes)
@@ -123,6 +125,7 @@ src/
     (app)/tarefas/     T5 · lista agrupada, filtros, nova/editar/concluir/excluir
     (app)/configuracoes/ T6 · dados do casamento com prévia da mudança de data, convite, perfil
     (app)/votos/       votos de cada um: editor privado, salvamento automático, impressão
+    (app)/musica/      setlist por momento: adicionar, reordenar, imprimir para o DJ ou a banda
     (app)/estilo/      questionário de estilo e formato (tags que ativam checklists) e referências
     (app)/orcamento/   total, distribuição por categoria, prioridades e alertas de estouro
     (app)/fornecedores/ lista por categoria, cadastro, detalhe com as tarefas da categoria
