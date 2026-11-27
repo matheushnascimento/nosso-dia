@@ -13,6 +13,7 @@ const POR_HINT: Record<string, string> = {
   data_passada: "A data do casamento não pode estar no passado.",
   votos_vazios: "Escreva os votos antes de marcar como prontos.",
   votos_longos: "Os votos passaram do limite de 10.000 caracteres.",
+  convite_de_outro_evento: "Esse convite não é deste casamento.",
 };
 
 /** Códigos de erro do Better Auth (APIError.body.code). */
@@ -33,6 +34,7 @@ const POR_CONSTRAINT: Record<string, string> = {
   fornecedores_categoria_check: "Escolha uma categoria da lista.",
   referencias_url_check: "Só aceitamos links que começam com http:// ou https://",
   musicas_link_check: "O link precisa começar com http:// ou https://",
+  pessoas_idade_check: "A idade precisa estar entre 0 e 120.",
 };
 
 type ErroBanco = { message?: string; hint?: string | null; code?: string | null; constraint_name?: string | null };

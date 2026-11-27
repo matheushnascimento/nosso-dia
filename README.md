@@ -102,6 +102,8 @@ src/
     pacotes.ts         checklists ativos e grupos de escolha
     fornecedores.ts    leitura, ordenação e resumo dos fornecedores
     campos-fornecedor/ campos próprios de cada categoria (um módulo por categoria), validação e resumo
+    convidados.ts      faixas, confirmações, lados, contagem e filtros da lista (puro, com testes)
+    convidados-dados.ts convites e pessoas do casal
     musica.ts          momentos da setlist
     musica-dados.ts    setlist do casal por momento
     estilo.ts          perguntas do questionário de estilo e formato, respostas ↔ tags (puro, com testes)
@@ -125,6 +127,7 @@ src/
     (app)/tarefas/     T5 · lista agrupada, filtros, nova/editar/concluir/excluir
     (app)/configuracoes/ T6 · dados do casamento com prévia da mudança de data, convite, perfil
     (app)/votos/       votos de cada um: editor privado, salvamento automático, impressão
+    (app)/convidados/  lista por convite, cadastro rápido, filtros, confirmação em lote, edição de cada pessoa
     (app)/musica/      setlist por momento: adicionar, reordenar, imprimir para o DJ ou a banda
     (app)/estilo/      questionário de estilo e formato (tags que ativam checklists) e referências
     (app)/orcamento/   total, distribuição por categoria, prioridades e alertas de estouro
@@ -156,6 +159,10 @@ src/
 - **Orçamento: planejado gravado, contratado calculado.** `orcamento_categorias` guarda só o planejado e as
   prioridades; o contratado é sempre a soma dos fornecedores `contratado`. A distribuição sugerida divide em reais
   inteiros pelos maiores restos e põe os centavos na reserva, então a soma é sempre exatamente o total.
+- **Convidados por convite.** Toda pessoa pertence a um `convites_familia` (um casal, uma família ou uma pessoa
+  só); lado e grupo ficam no convite, que é a unidade do RSVP público do M5. Um convite que fica sem ninguém é
+  apagado por trigger. O lado `a` é o primeiro membro do casamento e `b` o parceiro; a tela mostra o primeiro nome
+  de cada um. Telefone, e-mail e restrição alimentar são dados de terceiros: só os membros do casal acessam (RLS).
 - **Migrations são imutáveis depois de aplicadas.** Para mudar algo, crie uma migration nova; o `db:migrate`
   recusa rodar se uma já aplicada foi editada.
 - **Tipos gerados do banco** (`npm run db:types`): datas como `"YYYY-MM-DD"`, timestamps como texto ISO e

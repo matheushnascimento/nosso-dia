@@ -7,6 +7,8 @@ import { BotaoLink, Cartao, Esqueleto, Subtitulo } from "@/components/ui";
 import { getMembros, requireEvento } from "@/lib/dal";
 import { dataPorExtenso, diasEntre, hojeSP, horario, mesPorExtenso } from "@/lib/datas";
 import { formatarBRL, pluralizar } from "@/lib/formato";
+import { contar } from "@/lib/convidados";
+import { listarConvites } from "@/lib/convidados-dados";
 import { carregarEstilo } from "@/lib/estilo-dados";
 import { carregarOrcamento } from "@/lib/orcamento-dados";
 import { listarPacotes } from "@/lib/pacotes";
@@ -26,12 +28,13 @@ export default function Painel({ searchParams }: PageProps<"/painel">) {
 
 function EsqueletoPainel() {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Esqueleto className="h-48 md:col-span-2 lg:col-span-4" />
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <Esqueleto className="h-48 md:col-span-2 lg:col-span-3" />
       <Esqueleto className="h-32" />
       <Esqueleto className="h-32" />
       <Esqueleto className="h-32" />
       <Esqueleto className="h-32" />
+      <Esqueleto className="h-32 md:col-span-2" />
     </div>
   );
 }
@@ -44,11 +47,13 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/painel">["
     listarPacotes(ctx),
     searchParams,
   ]);
-  const [votos, orcamento, estilo] = await Promise.all([
+  const [votos, orcamento, estilo, convites] = await Promise.all([
     statusVotos(ctx, membros),
     carregarOrcamento(ctx),
     carregarEstilo(ctx),
+    listarConvites(ctx),
   ]);
+  const convidados = contar(convites);
   // Decisões pendentes que destravam checklists (ex.: tipo de cerimônia)
   const decisoes = pacotes.escolhas.filter((g) => !g.escolhido);
   const { evento } = ctx;
@@ -107,7 +112,7 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/painel">["
         </div>
       </Cartao>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Cartao>
           <p className="text-sm text-tinta-suave">Progresso</p>
           <p className="mt-1 font-serif text-4xl">{progresso}%</p>
@@ -163,6 +168,28 @@ async function Conteudo({ searchParams }: { searchParams: PageProps<"/painel">["
         </Cartao>
 
         <Cartao>
+          <p className="text-sm text-tinta-suave">Convidados</p>
+          {convidados.pessoas > 0 ? (
+            <>
+              <p className="mt-1 font-serif text-4xl">{convidados.pessoas}</p>
+              <p className="mt-2 text-sm text-tinta-suave">
+                <span className="text-salvia">{convidados.confirmados} confirmados</span> · {convidados.pendentes} pendentes
+              </p>
+            </>
+          ) : evento.convidados_estimados ? (
+            <>
+              <p className="mt-1 font-serif text-4xl">≈{evento.convidados_estimados}</p>
+              <p className="mt-2 text-sm text-tinta-suave">estimados · lista ainda vazia</p>
+            </>
+          ) : (
+            <p className="mt-2 text-sm text-tinta-suave">Nenhum convidado ainda.</p>
+          )}
+          <Link href="/convidados" className="mt-2 inline-block text-sm text-tinta-suave underline-offset-4 hover:text-tinta hover:underline">
+            {convidados.pessoas > 0 ? "Ver a lista →" : "Montar a lista →"}
+          </Link>
+        </Cartao>
+
+        <Cartao className="md:col-span-2">
           <p className="text-sm text-tinta-suave">Vocês</p>
           <ul className="mt-2 flex flex-col gap-1">
             {membros.map((m) => (

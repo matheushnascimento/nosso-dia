@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Cartao, Esqueleto, Titulo } from "@/components/ui";
+import { contar } from "@/lib/convidados";
+import { listarConvites } from "@/lib/convidados-dados";
 import { requireEvento } from "@/lib/dal";
 import { carregarEstilo, listarReferencias, type Referencia } from "@/lib/estilo-dados";
 import { CATEGORIAS_FORNECEDOR, type CategoriaFornecedor } from "@/lib/rotulos";
@@ -29,8 +31,14 @@ export default function PaginaEstilo() {
 
 async function Conteudo() {
   const ctx = await requireEvento();
-  const [estilo, referencias] = await Promise.all([carregarEstilo(ctx), listarReferencias(ctx)]);
-  const convidados = ctx.evento.convidados_estimados;
+  const [estilo, referencias, convites] = await Promise.all([
+    carregarEstilo(ctx),
+    listarReferencias(ctx),
+    listarConvites(ctx),
+  ]);
+  // número real quando a lista já começou; senão, a estimativa
+  const naLista = contar(convites).pessoas;
+  const estimados = ctx.evento.convidados_estimados;
 
   const porCategoria = new Map<CategoriaFornecedor, Referencia[]>();
   for (const r of referencias) porCategoria.set(r.categoria, [...(porCategoria.get(r.categoria) ?? []), r]);
@@ -40,10 +48,21 @@ async function Conteudo() {
     <div className="grid gap-6 lg:grid-cols-[1fr_22rem]">
       <Cartao>
         <p className="mb-4 text-sm text-tinta-suave">
-          Convidados: {convidados ? `cerca de ${convidados}` : "ainda não informado"} ·{" "}
-          <Link href="/configuracoes" className="underline underline-offset-4 hover:text-tinta">
-            mudar em Configurações
-          </Link>
+          {naLista > 0 ? (
+            <>
+              Convidados: {naLista} na lista ·{" "}
+              <Link href="/convidados" className="underline underline-offset-4 hover:text-tinta">
+                ver a lista
+              </Link>
+            </>
+          ) : (
+            <>
+              Convidados: {estimados ? `cerca de ${estimados}` : "ainda não informado"} ·{" "}
+              <Link href="/configuracoes" className="underline underline-offset-4 hover:text-tinta">
+                mudar em Configurações
+              </Link>
+            </>
+          )}
         </p>
         <FormEstilo opcoes={estilo.opcoes} respostas={estilo.respostas} />
       </Cartao>

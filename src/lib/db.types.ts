@@ -5,7 +5,11 @@
 
 import type { ColumnType } from "kysely";
 
+export type ConfirmacaoPresenca = "confirmado" | "pendente" | "recusado";
+
 export type DataStatus = "definida" | "indefinida" | "mes_estimado";
+
+export type FaixaEtaria = "adulto" | "bebe" | "crianca";
 
 export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
@@ -23,11 +27,23 @@ export type JsonPrimitive = boolean | number | string | null;
 
 export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
+export type LadoConvidado = "a" | "ambos" | "b";
+
 export type PapelMembro = "parceiro";
 
 export type StatusFornecedor = "contratado" | "descartado" | "orcamento_pedido" | "orcamento_recebido" | "pesquisando" | "visita";
 
 export type StatusTarefa = "concluida" | "pendente";
+
+export interface ConvitesFamilia {
+  atualizado_em: Generated<string>;
+  criado_em: Generated<string>;
+  evento_id: string;
+  grupo: string | null;
+  id: Generated<string>;
+  lado: Generated<LadoConvidado>;
+  nome: string;
+}
 
 export interface ConvitesParceiro {
   aceito_em: string | null;
@@ -139,6 +155,23 @@ export interface Perfis {
   criado_em: Generated<string>;
   id: string;
   nome: Generated<string>;
+}
+
+export interface Pessoas {
+  atualizado_em: Generated<string>;
+  confirmacao: Generated<ConfirmacaoPresenca>;
+  convite_id: string;
+  criado_em: Generated<string>;
+  email: string | null;
+  evento_id: string;
+  faixa: Generated<FaixaEtaria>;
+  id: Generated<string>;
+  idade: number | null;
+  nome: string;
+  observacao: string | null;
+  ordem: Generated<number>;
+  restricao_alimentar: string | null;
+  telefone: string | null;
 }
 
 export interface Referencias {
@@ -253,6 +286,7 @@ export interface Votos {
 }
 
 export interface DB {
+  convites_familia: ConvitesFamilia;
   convites_parceiro: ConvitesParceiro;
   evento_pacotes: EventoPacotes;
   evento_tags: EventoTags;
@@ -263,6 +297,7 @@ export interface DB {
   orcamento_categorias: OrcamentoCategorias;
   pacotes: Pacotes;
   perfis: Perfis;
+  pessoas: Pessoas;
   referencias: Referencias;
   tags: Tags;
   tarefa_modelo_subitens: TarefaModeloSubitens;
