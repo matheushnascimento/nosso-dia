@@ -13,7 +13,6 @@ const LINKS = [
   { href: "/estilo", rotulo: "Estilo" },
   { href: "/musica", rotulo: "Música" },
   { href: "/votos", rotulo: "Votos" },
-  { href: "/configuracoes", rotulo: "Configurações" },
 ] as const;
 
 /** Com o link da página atual destacado (lê a URL: precisa estar dentro de <Suspense>). */
@@ -31,7 +30,11 @@ export function NavLinksSemDestaque() {
 
 function Links({ path }: { path: string | null }) {
   return (
-    <nav aria-label="Principal" className="order-last flex w-full flex-wrap gap-1 sm:order-none sm:w-auto sm:flex-1">
+    // Linha própria, com a largura toda; no celular rola de lado em vez de quebrar em várias linhas
+    <nav
+      aria-label="Principal"
+      className="-mx-4 flex w-[calc(100%+2rem)] gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:-mx-3 sm:w-[calc(100%+1.5rem)] sm:px-0 [&::-webkit-scrollbar]:hidden"
+    >
       {LINKS.map((l) => {
         const ativo = path !== null && (path === l.href || path.startsWith(`${l.href}/`));
         return (
